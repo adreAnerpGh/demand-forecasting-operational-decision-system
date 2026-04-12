@@ -100,8 +100,7 @@ These findings directly inform both the forecasting models and the operational d
 │   └── 04_operational_scoring_demo.ipynb
 ├── src/
 │   ├── forecast_utils.py
-│   ├── build_operational_visual_board.py
-│   └── excel_dashboard.py
+│   └── build_operational_visual_board.py
 ├── data/
 │   └── sample_daily_cleaned_dataset.csv
 ├── outputs/
