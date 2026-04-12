@@ -125,13 +125,6 @@ This transformation step is a key part of the project, enabling reliable modelin
 │   └── build_operational_visual_board.py
 ├── data/
 │   └── daily_cleaned_dataset.csv
-├── outputs/
-│   ├── scored_operational_output_sample.csv
-│   ├── operational_calibration_output_sample.csv
-│   └── operational_dashboard_example.xlsx
-├── models/
-│   └── (saved models not included)
-├── requirements.txt
 └── README.md
 ```
 ---------------------------------------------------------------------
