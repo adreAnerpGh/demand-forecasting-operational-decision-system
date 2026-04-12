@@ -94,8 +94,8 @@ These findings directly inform both the forecasting models and the operational d
 ## Project Structure
 
 ├── notebooks/
-│ ├── 01_data_preparation.ipynb
-│ ├── 02_forecasting_and_modeling.ipynb
+  ├── 01_data_preparation.ipynb
+  ├── 02_forecasting_and_modeling.ipynb
 │ ├── 03_operational_calibration.ipynb
 │ └── 04_operational_scoring_demo.ipynb
 │
@@ -117,3 +117,22 @@ These findings directly inform both the forecasting models and the operational d
 │
 ├── requirements.txt
 └── README.md
+
+---------------------------------------------------------------------
+
+## Example Output
+
+The system produces a structured operational view combining:
+
+- Forecasted occupancy (T+7 → T+28)
+- Directional probabilities
+- Signal strength
+- Reliability assessment
+- Final recommended action
+
+Additionally, a visual decision board is generated:
+
+- Separate T+21 and T+28 panels  
+- Direction, reliability, stability, and action clearly displayed  
+- Designed for operational readability  
+
