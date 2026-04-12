@@ -25,6 +25,7 @@ This project bridges the gap between **forecasting** and **operational decision-
 The system is built in four layers:
 
 ### 1. Feature Engineering
+
 Operational signals are constructed from raw data:
 
 - Booking inflows and notice outflows  
@@ -56,9 +57,9 @@ Classification models predict the **direction of change**:
 
 A reliability-aware decision layer is built using:
 
-- **Guardrail** → detects structural instability (high booking/notice pressure)  
-- **Alignment Score** → rolling measure of recent model accuracy  
-- **Strength Bands** → STRONG / MODERATE / UNCERTAIN signals  
+- **Guardrail**: detects structural instability (high booking/notice pressure)  
+- **Alignment Score**: rolling measure of recent model accuracy  
+- **Strength Bands**: STRONG / MODERATE / UNCERTAIN signals  
 
 These components are combined into calibrated actions such as:
 
@@ -91,18 +92,39 @@ These findings directly inform both the forecasting models and the operational d
 
 ---------------------------------------------------------------------
 
+## Data Transformation
+
+The original dataset was collected at customer and unit level and contained operational and behavioral information.
+
+For this project, the data was transformed into a daily aggregated dataset to:
+
+- remove all customer identifiers
+- remove personal attributes
+- remove unit-level tracking
+- create consistent time-series inputs
+
+The resulting dataset captures system-level demand dynamics while preserving confidentiality.
+
+This transformation step is a key part of the project, enabling reliable modeling while maintaining data privacy.
+
+---------------------------------------------------------------------
+
 ## Project Structure
 ```
 ├── notebooks/
 │   ├── 01_data_preparation.ipynb
-│   ├── 02_forecasting_and_modeling.ipynb
+│   ├── 01_data_preparation.html
+│   ├── 02_modeling.ipynb
+│   ├── 02_modeling.html
 │   ├── 03_operational_calibration.ipynb
-│   └── 04_operational_scoring_demo.ipynb
+│   ├── 03_operational_calibration.html
+│   ├── 04_operational_demo.ipynb
+│   ├── 04_operational_demo.html
 ├── src/
 │   ├── forecast_utils.py
 │   └── build_operational_visual_board.py
 ├── data/
-│   └── sample_daily_cleaned_dataset.csv
+│   └── daily_cleaned_dataset.csv
 ├── outputs/
 │   ├── scored_operational_output_sample.csv
 │   ├── operational_calibration_output_sample.csv
@@ -130,3 +152,13 @@ Additionally, a visual decision board is generated:
 - Direction, reliability, stability, and action clearly displayed  
 - Designed for operational readability  
 
+---------------------------------------------------------------------
+
+## Key Insights
+
+- Demand behavior is not uniform: short-term occupancy is persistence-driven, while medium-term occupancy reflects demand pressure and flow dynamics  
+- Spikes are associated with unstable high-pressure periods and are harder to predict reliably  
+- Medium-term forecasts (T+7 to T+28) outperform naive baselines  
+- Directional models become more useful as the forecast horizon increases  
+- The alignment score successfully identifies periods of higher and lower model reliability  
+- Combining demand signals, directional predictions, and reliability layers improves decision quality  
