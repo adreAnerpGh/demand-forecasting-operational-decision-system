@@ -98,23 +98,18 @@ These findings directly inform both the forecasting models and the operational d
 │   ├── 02_forecasting_and_modeling.ipynb
 │   ├── 03_operational_calibration.ipynb
 │   └── 04_operational_scoring_demo.ipynb
-│
 ├── src/
-│ ├── forecast_utils.py
-│ ├── build_operational_visual_board.py
-│ └── excel_dashboard.py
-│
+│   ├── forecast_utils.py
+│   ├── build_operational_visual_board.py
+│   └── excel_dashboard.py
 ├── data/
-│ └── sample_daily_cleaned_dataset.csv
-│
+│   └── sample_daily_cleaned_dataset.csv
 ├── outputs/
-│ ├── scored_operational_output_sample.csv
-│ ├── operational_calibration_output_sample.csv
-│ └── operational_dashboard_example.xlsx
-│
+│   ├── scored_operational_output_sample.csv
+│   ├── operational_calibration_output_sample.csv
+│   └── operational_dashboard_example.xlsx
 ├── models/
-│ └── (saved models not included)
-│
+│   └── (saved models not included)
 ├── requirements.txt
 └── README.md
 
