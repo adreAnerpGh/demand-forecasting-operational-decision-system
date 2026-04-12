@@ -92,7 +92,7 @@ These findings directly inform both the forecasting models and the operational d
 ---------------------------------------------------------------------
 
 ## Project Structure
-
+```
 ├── notebooks/
 │   ├── 01_data_preparation.ipynb
 │   ├── 02_forecasting_and_modeling.ipynb
@@ -112,7 +112,7 @@ These findings directly inform both the forecasting models and the operational d
 │   └── (saved models not included)
 ├── requirements.txt
 └── README.md
-
+```
 ---------------------------------------------------------------------
 
 ## Example Output
