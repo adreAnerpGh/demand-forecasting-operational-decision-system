@@ -7534,13 +7534,10 @@ a.anchor-link {
 <li><strong>Directional / operational modeling</strong>, to translate forecasts into practical business actions</li>
 </ol>
 <p>This structure reflects the idea that a useful forecasting system should not only predict levels, but also communicate uncertainty and support decisions.</p>
-<h5 id="Why-linear-models-were-used"><em><strong>Why linear models were used</strong></em><a class="anchor-link" href="#Why-linear-models-were-used">¶</a></h5><p>Linear models were chosen as the primary modeling framework for three reasons:</p>
-<ul>
-<li>the project is not only predictive but explanatory: the aim is to understand how occupancy evolves in relation to persistence, seasonality, bookings, notices, and flow pressure. Linear regression provides direct coefficient interpretability, which is valuable in a business setting.</li>
-<li>the dataset is relatively small for a daily forecasting task, with roughly four years of observations. In this context, simpler models provide a useful starting point and reduce the risk of overfitting.</li>
-<li>the business logic itself is close to an additive state-transition structure, where occupancy evolves from a combination of current state, inflow, and outflow effects. Linear models are therefore a natural first benchmark before moving to more complex algorithms.</li>
-</ul>
-<p>More flexible models could be tested later, but linear models were used here to establish a transparent and operationally interpretable baseline.</p>
+<h5 id="Why-linear-models-were-used"><em><strong>Why linear models were used</strong></em><a class="anchor-link" href="#Why-linear-models-were-used">¶</a></h5><p>Linear models were chosen as the main starting point for three reasons.</p>
+<p>First, this project is not only predictive but also explanatory. The goal is to understand how occupancy changes in relation to persistence, seasonality, bookings, notices, and flow pressure. Linear regression makes those relationships interpretable.</p>
+<p>Second, the dataset is relatively small for a daily forecasting task, with roughly four years of observations. In that setting, simpler models provide a strong baseline and reduce the risk of overfitting.</p>
+<p>Third, the business logic is close to an additive state-transition process, where future occupancy evolves from current state plus inflow and outflow effects. Linear models are therefore a natural first benchmark before testing more complex algorithms.</p>
 </div>
 </div>
 </div>
@@ -7551,16 +7548,8 @@ a.anchor-link {
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h3 id="1.-Imports-and-Load">1. Imports and Load<a class="anchor-link" href="#1.-Imports-and-Load">¶</a></h3><p>The cleaned daily dataset is loaded as the starting point for all subsequent modeling steps.<br/>
-At this point, the problem has already been converted from a repeated weekly-record structure into a consistent daily time series.</p>
-<p>This is important because the forecasting models developed below rely on a daily view of:</p>
-<ul>
-<li>occupancy state</li>
-<li>booking inflows</li>
-<li>notice outflows</li>
-<li>timing behavior</li>
-</ul>
-<p>In other words, Notebook 1 created a behaviorally meaningful dataset, and Notebook 2 turns that dataset into forecasting and decision-support models.</p>
+<h3 id="1.-Imports-and-Load">1. Imports and Load<a class="anchor-link" href="#1.-Imports-and-Load">¶</a></h3><p>This notebook starts from the cleaned daily dataset built in Notebook 1.
+At this stage, the original weekly tracking data has already been converted into a daily operational time series suitable for forecasting.</p>
 </div>
 </div>
 </div>
@@ -7569,11 +7558,14 @@ At this point, the problem has already been converted from a repeated weekly-rec
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [1]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [72]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">"ignore"</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="ne">FutureWarning</span><span class="p">)</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.linear_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">LinearRegression</span><span class="p">,</span> <span class="n">LogisticRegression</span><span class="p">,</span> <span class="n">Ridge</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
@@ -7587,8 +7579,7 @@ At this point, the problem has already been converted from a repeated weekly-rec
 <span class="n">daily</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">"daily_cleaned_dataset.csv"</span><span class="p">,</span> <span class="n">parse_dates</span><span class="o">=</span><span class="p">[</span><span class="s2">"Date"</span><span class="p">])</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="n">daily</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">daily</span><span class="o">.</span><span class="n">head</span><span class="p">())</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">daily</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
+<span class="n">daily</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -7602,28 +7593,123 @@ At this point, the problem has already been converted from a repeated weekly-rec
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>(1247, 12)
-        Date  Occupied_Units      Week  Occupancy  Bookings  Notices  \
-0 2016-08-01            60.0  2016-W31   0.857143       6.0      1.0   
-1 2016-08-02            59.0  2016-W31   0.842857       0.0      0.0   
-2 2016-08-03            58.0  2016-W31   0.828571       3.0      3.0   
-3 2016-08-04            59.0  2016-W31   0.842857       0.0      0.0   
-4 2016-08-05            56.0  2016-W31   0.800000       0.0      1.0   
-
-   Avg_Booking_Time  Avg_Notice_Time  Has_Bookings  Has_Notices  \
-0          7.500000        18.000000             1            1   
-1          8.333333        14.000000             0            0   
-2          9.333333         5.666667             1            1   
-3          8.333333        14.000000             0            0   
-4          8.333333         4.000000             0            1   
-
-   units_available  Missing_Occupancy_Flag  
-0             70.0                       0  
-1             70.0                       0  
-2             70.0                       0  
-3             70.0                       0  
-4             70.0                       0  
-['Date', 'Occupied_Units', 'Week', 'Occupancy', 'Bookings', 'Notices', 'Avg_Booking_Time', 'Avg_Notice_Time', 'Has_Bookings', 'Has_Notices', 'units_available', 'Missing_Occupancy_Flag']
 </pre>
+</div>
+</div>
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[72]:</div>
+<div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html" tabindex="0">
+<div>
+<style scoped="">
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+<thead>
+<tr style="text-align: right;">
+<th></th>
+<th>Date</th>
+<th>Occupied_Units</th>
+<th>Week</th>
+<th>Occupancy</th>
+<th>Bookings</th>
+<th>Notices</th>
+<th>Avg_Booking_Time</th>
+<th>Avg_Notice_Time</th>
+<th>Has_Bookings</th>
+<th>Has_Notices</th>
+<th>units_available</th>
+<th>Missing_Occupancy_Flag</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th>0</th>
+<td>2016-08-01</td>
+<td>60.0</td>
+<td>2016-W31</td>
+<td>0.857143</td>
+<td>6.0</td>
+<td>1.0</td>
+<td>7.500000</td>
+<td>18.000000</td>
+<td>1</td>
+<td>1</td>
+<td>70.0</td>
+<td>0</td>
+</tr>
+<tr>
+<th>1</th>
+<td>2016-08-02</td>
+<td>59.0</td>
+<td>2016-W31</td>
+<td>0.842857</td>
+<td>0.0</td>
+<td>0.0</td>
+<td>8.333333</td>
+<td>14.000000</td>
+<td>0</td>
+<td>0</td>
+<td>70.0</td>
+<td>0</td>
+</tr>
+<tr>
+<th>2</th>
+<td>2016-08-03</td>
+<td>58.0</td>
+<td>2016-W31</td>
+<td>0.828571</td>
+<td>3.0</td>
+<td>3.0</td>
+<td>9.333333</td>
+<td>5.666667</td>
+<td>1</td>
+<td>1</td>
+<td>70.0</td>
+<td>0</td>
+</tr>
+<tr>
+<th>3</th>
+<td>2016-08-04</td>
+<td>59.0</td>
+<td>2016-W31</td>
+<td>0.842857</td>
+<td>0.0</td>
+<td>0.0</td>
+<td>8.333333</td>
+<td>14.000000</td>
+<td>0</td>
+<td>0</td>
+<td>70.0</td>
+<td>0</td>
+</tr>
+<tr>
+<th>4</th>
+<td>2016-08-05</td>
+<td>56.0</td>
+<td>2016-W31</td>
+<td>0.800000</td>
+<td>0.0</td>
+<td>1.0</td>
+<td>8.333333</td>
+<td>4.000000</td>
+<td>0</td>
+<td>1</td>
+<td>70.0</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+</div>
 </div>
 </div>
 </div>
@@ -7635,7 +7721,7 @@ At this point, the problem has already been converted from a repeated weekly-rec
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h3 id="2.-Helper-functions">2. Helper functions<a class="anchor-link" href="#2.-Helper-functions">¶</a></h3>
+<h3 id="2.-Import-reusable-project-functions">2. Import reusable project functions<a class="anchor-link" href="#2.-Import-reusable-project-functions">¶</a></h3>
 </div>
 </div>
 </div>
@@ -7662,7 +7748,7 @@ At this point, the problem has already been converted from a repeated weekly-rec
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [2]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [73]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">forecast_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
@@ -7704,7 +7790,7 @@ Each model is compared against a realistic baseline for that horizon. This provi
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [3]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [74]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">forecast_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
@@ -7740,7 +7826,7 @@ In this business, those periods are often the days with unusually strong booking
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [4]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [75]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">forecast_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
@@ -7759,7 +7845,7 @@ In this business, those periods are often the days with unusually strong booking
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h4 id="2.4-Ridge-Model-Extension">2.4 Ridge Model Extension<a class="anchor-link" href="#2.4-Ridge-Model-Extension">¶</a></h4>
+<h4 id="2.4-Ridge-Model-Extension">2.4 Ridge Model Extension<a class="anchor-link" href="#2.4-Ridge-Model-Extension">¶</a></h4><p>Ridge is included as a robustness check</p>
 </div>
 </div>
 </div>
@@ -7768,7 +7854,7 @@ In this business, those periods are often the days with unusually strong booking
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [5]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [76]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">forecast_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
@@ -7803,7 +7889,7 @@ They are often based on whether demand is likely to move <strong>up</strong>, <s
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [6]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [77]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">forecast_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
@@ -7843,7 +7929,7 @@ Three layers are now defined simultaneously:</p>
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [7]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [78]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Build the full engineered feature set.</span>
@@ -7862,20 +7948,21 @@ Three layers are now defined simultaneously:</p>
 
 <span class="c1"># Create directional labels for all horizons.</span>
 <span class="c1"># This supports later classification-based directional analysis.</span>
-<span class="n">train</span> <span class="o">=</span> <span class="n">add_direction_target</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">target_col</span><span class="o">=</span><span class="s2">"target_t1"</span><span class="p">,</span> <span class="n">new_col</span><span class="o">=</span><span class="s2">"Direction_t1"</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.005</span><span class="p">)</span>
-<span class="n">test</span> <span class="o">=</span> <span class="n">add_direction_target</span><span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="n">target_col</span><span class="o">=</span><span class="s2">"target_t1"</span><span class="p">,</span> <span class="n">new_col</span><span class="o">=</span><span class="s2">"Direction_t1"</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.005</span><span class="p">)</span>
+<span class="n">horizons</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"t1"</span><span class="p">,</span> <span class="s2">"t7"</span><span class="p">,</span> <span class="s2">"t14"</span><span class="p">,</span> <span class="s2">"t21"</span><span class="p">,</span> <span class="s2">"t28"</span><span class="p">]</span>
 
-<span class="n">train</span> <span class="o">=</span> <span class="n">add_direction_target</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">target_col</span><span class="o">=</span><span class="s2">"target_t7"</span><span class="p">,</span> <span class="n">new_col</span><span class="o">=</span><span class="s2">"Direction_t7"</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.005</span><span class="p">)</span>
-<span class="n">test</span> <span class="o">=</span> <span class="n">add_direction_target</span><span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="n">target_col</span><span class="o">=</span><span class="s2">"target_t7"</span><span class="p">,</span> <span class="n">new_col</span><span class="o">=</span><span class="s2">"Direction_t7"</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.005</span><span class="p">)</span>
-
-<span class="n">train</span> <span class="o">=</span> <span class="n">add_direction_target</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">target_col</span><span class="o">=</span><span class="s2">"target_t14"</span><span class="p">,</span> <span class="n">new_col</span><span class="o">=</span><span class="s2">"Direction_t14"</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.005</span><span class="p">)</span>
-<span class="n">test</span> <span class="o">=</span> <span class="n">add_direction_target</span><span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="n">target_col</span><span class="o">=</span><span class="s2">"target_t14"</span><span class="p">,</span> <span class="n">new_col</span><span class="o">=</span><span class="s2">"Direction_t14"</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.005</span><span class="p">)</span>
-
-<span class="n">train</span> <span class="o">=</span> <span class="n">add_direction_target</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">target_col</span><span class="o">=</span><span class="s2">"target_t21"</span><span class="p">,</span> <span class="n">new_col</span><span class="o">=</span><span class="s2">"Direction_t21"</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.005</span><span class="p">)</span>
-<span class="n">test</span> <span class="o">=</span> <span class="n">add_direction_target</span><span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="n">target_col</span><span class="o">=</span><span class="s2">"target_t21"</span><span class="p">,</span> <span class="n">new_col</span><span class="o">=</span><span class="s2">"Direction_t21"</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.005</span><span class="p">)</span>
-
-<span class="n">train</span> <span class="o">=</span> <span class="n">add_direction_target</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">target_col</span><span class="o">=</span><span class="s2">"target_t28"</span><span class="p">,</span> <span class="n">new_col</span><span class="o">=</span><span class="s2">"Direction_t28"</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.005</span><span class="p">)</span>
-<span class="n">test</span> <span class="o">=</span> <span class="n">add_direction_target</span><span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="n">target_col</span><span class="o">=</span><span class="s2">"target_t28"</span><span class="p">,</span> <span class="n">new_col</span><span class="o">=</span><span class="s2">"Direction_t28"</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.005</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">horizons</span><span class="p">:</span>
+    <span class="n">train</span> <span class="o">=</span> <span class="n">add_direction_target</span><span class="p">(</span>
+        <span class="n">train</span><span class="p">,</span>
+        <span class="n">target_col</span><span class="o">=</span><span class="sa">f</span><span class="s2">"target_</span><span class="si">{</span><span class="n">h</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+        <span class="n">new_col</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Direction_</span><span class="si">{</span><span class="n">h</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+        <span class="n">threshold</span><span class="o">=</span><span class="mf">0.005</span>
+    <span class="p">)</span>
+    <span class="n">test</span> <span class="o">=</span> <span class="n">add_direction_target</span><span class="p">(</span>
+        <span class="n">test</span><span class="p">,</span>
+        <span class="n">target_col</span><span class="o">=</span><span class="sa">f</span><span class="s2">"target_</span><span class="si">{</span><span class="n">h</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+        <span class="n">new_col</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Direction_</span><span class="si">{</span><span class="n">h</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+        <span class="n">threshold</span><span class="o">=</span><span class="mf">0.005</span>
+    <span class="p">)</span>
 
 <span class="c1"># Estimate spike threshold on training data only.</span>
 <span class="n">spike_threshold</span> <span class="o">=</span> <span class="n">compute_spike_threshold</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">quantile</span><span class="o">=</span><span class="mf">0.80</span><span class="p">)</span>
@@ -7885,10 +7972,8 @@ Three layers are now defined simultaneously:</p>
 <span class="n">test</span> <span class="o">=</span> <span class="n">apply_spike_labels</span><span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="n">spike_threshold</span><span class="p">)</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="s2">"Spike threshold:"</span><span class="p">,</span> <span class="nb">round</span><span class="p">(</span><span class="n">spike_threshold</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"Train spikes:"</span><span class="p">,</span> <span class="n">train</span><span class="p">[</span><span class="s2">"Spike"</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"Test spikes:"</span><span class="p">,</span> <span class="n">test</span><span class="p">[</span><span class="s2">"Spike"</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"Train shape:"</span><span class="p">,</span> <span class="n">train</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"Test shape:"</span><span class="p">,</span> <span class="n">test</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Train spikes:"</span><span class="p">,</span> <span class="n">train</span><span class="p">[</span><span class="s2">"Spike"</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">(),</span> <span class="s2">"| Test spikes:"</span><span class="p">,</span> <span class="n">test</span><span class="p">[</span><span class="s2">"Spike"</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Train shape:"</span><span class="p">,</span> <span class="n">train</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="s2">"| Test shape:"</span><span class="p">,</span> <span class="n">test</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -7902,10 +7987,8 @@ Three layers are now defined simultaneously:</p>
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>Spike threshold: 0.027778
-Train spikes: 168
-Test spikes: 41
-Train shape: (855, 60)
-Test shape: (336, 60)
+Train spikes: 168 | Test spikes: 41
+Train shape: (855, 60) | Test shape: (336, 60)
 </pre>
 </div>
 </div>
@@ -7936,7 +8019,7 @@ are large occupancy changes simply irregular shocks, or do they recur in identif
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [8]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [79]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Explore whether spikes appear randomly or cluster in specific recurring periods.</span>
@@ -8085,7 +8168,7 @@ A useful forecasting system should therefore allow the data-generating logic to 
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [9]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [80]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="c1"># T+1 forecasting is expected to be dominated by persistence.</span>
@@ -8156,55 +8239,30 @@ A useful forecasting system should therefore allow the data-generating logic to 
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [10]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [81]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Fit interpretable linear models across all forecast horizons.</span>
 <span class="c1"># Each horizon is compared with its correct naive baseline.</span>
-<span class="n">result_t1</span> <span class="o">=</span> <span class="n">run_linear_model</span><span class="p">(</span>
-    <span class="n">train</span><span class="o">=</span><span class="n">train</span><span class="p">,</span>
-    <span class="n">test</span><span class="o">=</span><span class="n">test</span><span class="p">,</span>
-    <span class="n">features</span><span class="o">=</span><span class="n">features_t1</span><span class="p">,</span>
-    <span class="n">target_col</span><span class="o">=</span><span class="s2">"target_t1"</span><span class="p">,</span>
-    <span class="n">naive_col</span><span class="o">=</span><span class="s2">"Occupancy"</span><span class="p">,</span>
-    <span class="n">label</span><span class="o">=</span><span class="s2">"T+1"</span>
-<span class="p">)</span>
+<span class="n">model_configs</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"T+1"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"target_t1"</span><span class="p">,</span> <span class="s2">"Occupancy"</span><span class="p">,</span> <span class="n">features_t1</span><span class="p">),</span>
+    <span class="s2">"T+7"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"target_t7"</span><span class="p">,</span> <span class="s2">"Lag_7d"</span><span class="p">,</span> <span class="n">features_medium</span><span class="p">),</span>
+    <span class="s2">"T+14"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"target_t14"</span><span class="p">,</span> <span class="s2">"Lag_14d"</span><span class="p">,</span> <span class="n">features_medium</span><span class="p">),</span>
+    <span class="s2">"T+21"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"target_t21"</span><span class="p">,</span> <span class="s2">"Lag_21d"</span><span class="p">,</span> <span class="n">features_medium</span><span class="p">),</span>
+    <span class="s2">"T+28"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"target_t28"</span><span class="p">,</span> <span class="s2">"Lag_28d"</span><span class="p">,</span> <span class="n">features_medium</span><span class="p">),</span>
+<span class="p">}</span>
 
-<span class="n">result_t7</span> <span class="o">=</span> <span class="n">run_linear_model</span><span class="p">(</span>
-    <span class="n">train</span><span class="o">=</span><span class="n">train</span><span class="p">,</span>
-    <span class="n">test</span><span class="o">=</span><span class="n">test</span><span class="p">,</span>
-    <span class="n">features</span><span class="o">=</span><span class="n">features_medium</span><span class="p">,</span>
-    <span class="n">target_col</span><span class="o">=</span><span class="s2">"target_t7"</span><span class="p">,</span>
-    <span class="n">naive_col</span><span class="o">=</span><span class="s2">"Lag_7d"</span><span class="p">,</span>
-    <span class="n">label</span><span class="o">=</span><span class="s2">"T+7"</span>
-<span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="p">{}</span>
 
-<span class="n">result_t14</span> <span class="o">=</span> <span class="n">run_linear_model</span><span class="p">(</span>
-    <span class="n">train</span><span class="o">=</span><span class="n">train</span><span class="p">,</span>
-    <span class="n">test</span><span class="o">=</span><span class="n">test</span><span class="p">,</span>
-    <span class="n">features</span><span class="o">=</span><span class="n">features_medium</span><span class="p">,</span>
-    <span class="n">target_col</span><span class="o">=</span><span class="s2">"target_t14"</span><span class="p">,</span>
-    <span class="n">naive_col</span><span class="o">=</span><span class="s2">"Lag_14d"</span><span class="p">,</span>
-    <span class="n">label</span><span class="o">=</span><span class="s2">"T+14"</span>
-<span class="p">)</span>
-
-<span class="n">result_t21</span> <span class="o">=</span> <span class="n">run_linear_model</span><span class="p">(</span>
-    <span class="n">train</span><span class="o">=</span><span class="n">train</span><span class="p">,</span>
-    <span class="n">test</span><span class="o">=</span><span class="n">test</span><span class="p">,</span>
-    <span class="n">features</span><span class="o">=</span><span class="n">features_medium</span><span class="p">,</span>
-    <span class="n">target_col</span><span class="o">=</span><span class="s2">"target_t21"</span><span class="p">,</span>
-    <span class="n">naive_col</span><span class="o">=</span><span class="s2">"Lag_21d"</span><span class="p">,</span>
-    <span class="n">label</span><span class="o">=</span><span class="s2">"T+21"</span>
-<span class="p">)</span>
-
-<span class="n">result_t28</span> <span class="o">=</span> <span class="n">run_linear_model</span><span class="p">(</span>
-    <span class="n">train</span><span class="o">=</span><span class="n">train</span><span class="p">,</span>
-    <span class="n">test</span><span class="o">=</span><span class="n">test</span><span class="p">,</span>
-    <span class="n">features</span><span class="o">=</span><span class="n">features_medium</span><span class="p">,</span>
-    <span class="n">target_col</span><span class="o">=</span><span class="s2">"target_t28"</span><span class="p">,</span>
-    <span class="n">naive_col</span><span class="o">=</span><span class="s2">"Lag_28d"</span><span class="p">,</span>
-    <span class="n">label</span><span class="o">=</span><span class="s2">"T+28"</span>
-<span class="p">)</span>
+<span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">naive</span><span class="p">,</span> <span class="n">feats</span><span class="p">)</span> <span class="ow">in</span> <span class="n">model_configs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="n">results</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="n">run_linear_model</span><span class="p">(</span>
+        <span class="n">train</span><span class="o">=</span><span class="n">train</span><span class="p">,</span>
+        <span class="n">test</span><span class="o">=</span><span class="n">test</span><span class="p">,</span>
+        <span class="n">features</span><span class="o">=</span><span class="n">feats</span><span class="p">,</span>
+        <span class="n">target_col</span><span class="o">=</span><span class="n">target</span><span class="p">,</span>
+        <span class="n">naive_col</span><span class="o">=</span><span class="n">naive</span><span class="p">,</span>
+        <span class="n">label</span><span class="o">=</span><span class="n">label</span>
+    <span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -8397,36 +8455,23 @@ dtype: float64
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [11]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [82]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Consolidate forecasting performance across horizons.</span>
 <span class="c1"># This allows the trade-off between horizon length and predictive accuracy</span>
 <span class="c1"># to be compared directly.</span>
-<span class="n">summary</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
-    <span class="s2">"Horizon"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"T+1"</span><span class="p">,</span> <span class="s2">"T+7"</span><span class="p">,</span> <span class="s2">"T+14"</span><span class="p">,</span> <span class="s2">"T+21"</span><span class="p">,</span> <span class="s2">"T+28"</span><span class="p">],</span>
-    <span class="s2">"Model_MAE"</span><span class="p">:</span> <span class="p">[</span>
-        <span class="n">result_t1</span><span class="p">[</span><span class="s2">"mae_model"</span><span class="p">],</span>
-        <span class="n">result_t7</span><span class="p">[</span><span class="s2">"mae_model"</span><span class="p">],</span>
-        <span class="n">result_t14</span><span class="p">[</span><span class="s2">"mae_model"</span><span class="p">],</span>
-        <span class="n">result_t21</span><span class="p">[</span><span class="s2">"mae_model"</span><span class="p">],</span>
-        <span class="n">result_t28</span><span class="p">[</span><span class="s2">"mae_model"</span><span class="p">]</span>
-    <span class="p">],</span>
-    <span class="s2">"Naive_MAE"</span><span class="p">:</span> <span class="p">[</span>
-        <span class="n">result_t1</span><span class="p">[</span><span class="s2">"mae_naive"</span><span class="p">],</span>
-        <span class="n">result_t7</span><span class="p">[</span><span class="s2">"mae_naive"</span><span class="p">],</span>
-        <span class="n">result_t14</span><span class="p">[</span><span class="s2">"mae_naive"</span><span class="p">],</span>
-        <span class="n">result_t21</span><span class="p">[</span><span class="s2">"mae_naive"</span><span class="p">],</span>
-        <span class="n">result_t28</span><span class="p">[</span><span class="s2">"mae_naive"</span><span class="p">]</span>
-    <span class="p">],</span>
-    <span class="s2">"MAE_Improvement"</span><span class="p">:</span> <span class="p">[</span>
-        <span class="n">result_t1</span><span class="p">[</span><span class="s2">"mae_naive"</span><span class="p">]</span> <span class="o">-</span> <span class="n">result_t1</span><span class="p">[</span><span class="s2">"mae_model"</span><span class="p">],</span>
-        <span class="n">result_t7</span><span class="p">[</span><span class="s2">"mae_naive"</span><span class="p">]</span> <span class="o">-</span> <span class="n">result_t7</span><span class="p">[</span><span class="s2">"mae_model"</span><span class="p">],</span>
-        <span class="n">result_t14</span><span class="p">[</span><span class="s2">"mae_naive"</span><span class="p">]</span> <span class="o">-</span> <span class="n">result_t14</span><span class="p">[</span><span class="s2">"mae_model"</span><span class="p">],</span>
-        <span class="n">result_t21</span><span class="p">[</span><span class="s2">"mae_naive"</span><span class="p">]</span> <span class="o">-</span> <span class="n">result_t21</span><span class="p">[</span><span class="s2">"mae_model"</span><span class="p">],</span>
-        <span class="n">result_t28</span><span class="p">[</span><span class="s2">"mae_naive"</span><span class="p">]</span> <span class="o">-</span> <span class="n">result_t28</span><span class="p">[</span><span class="s2">"mae_model"</span><span class="p">]</span>
-    <span class="p">]</span>
-<span class="p">})</span>
+<span class="n">ordered_horizons</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"T+1"</span><span class="p">,</span> <span class="s2">"T+7"</span><span class="p">,</span> <span class="s2">"T+14"</span><span class="p">,</span> <span class="s2">"T+21"</span><span class="p">,</span> <span class="s2">"T+28"</span><span class="p">]</span>
+
+<span class="n">summary</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([</span>
+    <span class="p">{</span>
+        <span class="s2">"Horizon"</span><span class="p">:</span> <span class="n">horizon</span><span class="p">,</span>
+        <span class="s2">"Model_MAE"</span><span class="p">:</span> <span class="n">results</span><span class="p">[</span><span class="n">horizon</span><span class="p">][</span><span class="s2">"mae_model"</span><span class="p">],</span>
+        <span class="s2">"Naive_MAE"</span><span class="p">:</span> <span class="n">results</span><span class="p">[</span><span class="n">horizon</span><span class="p">][</span><span class="s2">"mae_naive"</span><span class="p">],</span>
+        <span class="s2">"MAE_Improvement"</span><span class="p">:</span> <span class="n">results</span><span class="p">[</span><span class="n">horizon</span><span class="p">][</span><span class="s2">"mae_naive"</span><span class="p">]</span> <span class="o">-</span> <span class="n">results</span><span class="p">[</span><span class="n">horizon</span><span class="p">][</span><span class="s2">"mae_model"</span><span class="p">]</span>
+    <span class="p">}</span>
+    <span class="k">for</span> <span class="n">horizon</span> <span class="ow">in</span> <span class="n">ordered_horizons</span>
+<span class="p">])</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="n">summary</span><span class="p">)</span>
 </pre></div>
@@ -8459,9 +8504,8 @@ dtype: float64
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<p>The model becomes more useful beyond the next-day horizon.</p>
-<p>At <strong>T+1</strong>, it does not beat the naive baseline. From <strong>T+7 onward</strong>, it clearly improves performance, with the strongest gain at <strong>T+21</strong>.</p>
-<p>This shows that <strong>bookings, notices, and seasonality need time to impact occupancy</strong>, and are more useful at longer horizons.</p>
+<p>The model does not beat the naive baseline at T+1, but improves clearly <strong>T+7 onward</strong>.
+This suggests that <strong>bookings, notices, and seasonality need time to impact occupancy</strong>, and are more useful at longer horizons.</p>
 </div>
 </div>
 </div>
@@ -8490,47 +8534,20 @@ it is identifying periods where the system is structurally less predictable.</p>
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [12]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [83]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Build an instability flag from high booking / notice pressure.</span>
 <span class="c1"># Then compare forecast error inside and outside guardrail periods.</span>
 <span class="n">guardrail_test</span> <span class="o">=</span> <span class="n">build_guardrail</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">test</span><span class="p">,</span> <span class="n">quantile</span><span class="o">=</span><span class="mf">0.80</span><span class="p">)</span>
 
-<span class="n">evaluate_with_guardrail</span><span class="p">(</span>
-    <span class="n">y_true</span><span class="o">=</span><span class="n">result_t1</span><span class="p">[</span><span class="s2">"y_test"</span><span class="p">],</span>
-    <span class="n">y_pred</span><span class="o">=</span><span class="n">result_t1</span><span class="p">[</span><span class="s2">"pred"</span><span class="p">],</span>
-    <span class="n">guardrail</span><span class="o">=</span><span class="n">guardrail_test</span><span class="p">,</span>
-    <span class="n">label</span><span class="o">=</span><span class="s2">"T+1"</span>
-<span class="p">)</span>
-
-<span class="n">evaluate_with_guardrail</span><span class="p">(</span>
-    <span class="n">y_true</span><span class="o">=</span><span class="n">result_t7</span><span class="p">[</span><span class="s2">"y_test"</span><span class="p">],</span>
-    <span class="n">y_pred</span><span class="o">=</span><span class="n">result_t7</span><span class="p">[</span><span class="s2">"pred"</span><span class="p">],</span>
-    <span class="n">guardrail</span><span class="o">=</span><span class="n">guardrail_test</span><span class="p">,</span>
-    <span class="n">label</span><span class="o">=</span><span class="s2">"T+7"</span>
-<span class="p">)</span>
-
-<span class="n">evaluate_with_guardrail</span><span class="p">(</span>
-    <span class="n">y_true</span><span class="o">=</span><span class="n">result_t14</span><span class="p">[</span><span class="s2">"y_test"</span><span class="p">],</span>
-    <span class="n">y_pred</span><span class="o">=</span><span class="n">result_t14</span><span class="p">[</span><span class="s2">"pred"</span><span class="p">],</span>
-    <span class="n">guardrail</span><span class="o">=</span><span class="n">guardrail_test</span><span class="p">,</span>
-    <span class="n">label</span><span class="o">=</span><span class="s2">"T+14"</span>
-<span class="p">)</span>
-
-<span class="n">evaluate_with_guardrail</span><span class="p">(</span>
-    <span class="n">y_true</span><span class="o">=</span><span class="n">result_t21</span><span class="p">[</span><span class="s2">"y_test"</span><span class="p">],</span>
-    <span class="n">y_pred</span><span class="o">=</span><span class="n">result_t21</span><span class="p">[</span><span class="s2">"pred"</span><span class="p">],</span>
-    <span class="n">guardrail</span><span class="o">=</span><span class="n">guardrail_test</span><span class="p">,</span>
-    <span class="n">label</span><span class="o">=</span><span class="s2">"T+21"</span>
-<span class="p">)</span>
-
-<span class="n">evaluate_with_guardrail</span><span class="p">(</span>
-    <span class="n">y_true</span><span class="o">=</span><span class="n">result_t28</span><span class="p">[</span><span class="s2">"y_test"</span><span class="p">],</span>
-    <span class="n">y_pred</span><span class="o">=</span><span class="n">result_t28</span><span class="p">[</span><span class="s2">"pred"</span><span class="p">],</span>
-    <span class="n">guardrail</span><span class="o">=</span><span class="n">guardrail_test</span><span class="p">,</span>
-    <span class="n">label</span><span class="o">=</span><span class="s2">"T+28"</span>
-<span class="p">)</span>
+<span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">result</span> <span class="ow">in</span> <span class="n">results</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="n">evaluate_with_guardrail</span><span class="p">(</span>
+        <span class="n">y_true</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">"y_test"</span><span class="p">],</span>
+        <span class="n">y_pred</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">"pred"</span><span class="p">],</span>
+        <span class="n">guardrail</span><span class="o">=</span><span class="n">guardrail_test</span><span class="p">,</span>
+        <span class="n">label</span><span class="o">=</span><span class="n">label</span>
+    <span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -8581,16 +8598,6 @@ Difference: 0.02072
 </pre>
 </div>
 </div>
-<div class="jp-OutputArea-child jp-OutputArea-executeResult">
-<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[12]:</div>
-<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
-<pre>{'Horizon': 'T+28',
- 'Overall_MAE': 0.07194060551211894,
- 'MAE_Stable': 0.06713074563643306,
- 'MAE_Unstable': 0.08785014202400297,
- 'Difference': 0.020719396387569908}</pre>
-</div>
-</div>
 </div>
 </div>
 </div>
@@ -8607,69 +8614,13 @@ Difference: 0.02072
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=de2aafce">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
-</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h3 id="9.-Final-performance-summary">9. Final performance summary<a class="anchor-link" href="#9.-Final-performance-summary">¶</a></h3>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=472d4e9b">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [13]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Compact overall MAE summary across horizons.</span>
-<span class="c1"># This provides a quick final view of absolute forecast error levels.</span>
-<span class="n">guardrail_summary</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
-    <span class="s2">"Horizon"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"T+1"</span><span class="p">,</span> <span class="s2">"T+7"</span><span class="p">,</span> <span class="s2">"T+14"</span><span class="p">,</span> <span class="s2">"T+21"</span><span class="p">,</span> <span class="s2">"T+28"</span><span class="p">],</span>
-    <span class="s2">"Overall_MAE"</span><span class="p">:</span> <span class="p">[</span>
-        <span class="n">mean_absolute_error</span><span class="p">(</span><span class="n">result_t1</span><span class="p">[</span><span class="s2">"y_test"</span><span class="p">],</span> <span class="n">result_t1</span><span class="p">[</span><span class="s2">"pred"</span><span class="p">]),</span>
-        <span class="n">mean_absolute_error</span><span class="p">(</span><span class="n">result_t7</span><span class="p">[</span><span class="s2">"y_test"</span><span class="p">],</span> <span class="n">result_t7</span><span class="p">[</span><span class="s2">"pred"</span><span class="p">]),</span>
-        <span class="n">mean_absolute_error</span><span class="p">(</span><span class="n">result_t14</span><span class="p">[</span><span class="s2">"y_test"</span><span class="p">],</span> <span class="n">result_t14</span><span class="p">[</span><span class="s2">"pred"</span><span class="p">]),</span>
-        <span class="n">mean_absolute_error</span><span class="p">(</span><span class="n">result_t21</span><span class="p">[</span><span class="s2">"y_test"</span><span class="p">],</span> <span class="n">result_t21</span><span class="p">[</span><span class="s2">"pred"</span><span class="p">]),</span>
-        <span class="n">mean_absolute_error</span><span class="p">(</span><span class="n">result_t28</span><span class="p">[</span><span class="s2">"y_test"</span><span class="p">],</span> <span class="n">result_t28</span><span class="p">[</span><span class="s2">"pred"</span><span class="p">])</span>
-    <span class="p">]</span>
-<span class="p">})</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="n">guardrail_summary</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>  Horizon  Overall_MAE
-0     T+1     0.013246
-1     T+7     0.042448
-2    T+14     0.056774
-3    T+21     0.067360
-4    T+28     0.071941
-</pre>
-</div>
-</div>
-</div>
-</div>
-</div>
 <div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=69b736aa">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h3 id="10.-Model-extensions:-Ridge,-delta-forecasting,-and-operational-decision-layer">10. Model extensions: Ridge, delta forecasting, and operational decision layer<a class="anchor-link" href="#10.-Model-extensions:-Ridge,-delta-forecasting,-and-operational-decision-layer">¶</a></h3>
+<h3 id="9.-Model-extensions:-Ridge,-delta-forecasting,-and-operational-decision-layer">9. Model extensions: Ridge, delta forecasting, and operational decision layer<a class="anchor-link" href="#9.-Model-extensions:-Ridge,-delta-forecasting,-and-operational-decision-layer">¶</a></h3>
 </div>
 </div>
 </div>
@@ -8680,7 +8631,7 @@ Difference: 0.02072
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h4 id="10.1-Delta-based-forecasting-(aligned-with-state-transition-logic)">10.1 Delta-based forecasting (aligned with state-transition logic)<a class="anchor-link" href="#10.1-Delta-based-forecasting-(aligned-with-state-transition-logic)">¶</a></h4><p>Forecasting the change in occupancy is conceptually closer to the business mechanism than forecasting the level directly.</p>
+<h4 id="9.1-Delta-based-forecasting-(aligned-with-state-transition-logic)">9.1 Delta-based forecasting (aligned with state-transition logic)<a class="anchor-link" href="#9.1-Delta-based-forecasting-(aligned-with-state-transition-logic)">¶</a></h4><p>Forecasting the change in occupancy is conceptually closer to the business mechanism than forecasting the level directly.</p>
 <p>This extension tests whether the model can better learn the transition dynamic:
 current occupancy plus a predicted adjustment.</p>
 <p>If delta forecasting performs better, that suggests the system is easier to model as a movement process than as a direct level process.<br/>
@@ -8693,7 +8644,7 @@ If not, it suggests that persistence in the level is still the dominant short-te
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [14]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [84]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Model change in occupancy rather than occupancy level.</span>
@@ -8760,7 +8711,7 @@ dtype: float64
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<p>The delta-based T+1 formulation did not improve performance relative to direct level forecasting. This suggests that, at the 1-day horizon, the issue is not whether the model predicts occupancy level or occupancy change; rather, the dominant feature of the problem is that next-day occupancy is already well approximated by persistence.</p>
+<p>A delta-based T+1 formulation was tested to align more closely with the state-transition logic of the business. It did not improve performance relative to direct level forecasting, confirming that next-day occupancy remains primarily persistence-driven.</p>
 </div>
 </div>
 </div>
@@ -8771,7 +8722,7 @@ dtype: float64
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h4 id="10.2-Ridge-benchmark">10.2 Ridge benchmark<a class="anchor-link" href="#10.2-Ridge-benchmark">¶</a></h4><p>The feature set includes related variables such as Net_Flow, Demand_Pressure, Booking_Intensity, and Notice_Pressure.<br/>
+<h4 id="9.2-Ridge-benchmark">9.2 Ridge benchmark<a class="anchor-link" href="#9.2-Ridge-benchmark">¶</a></h4><p>The feature set includes related variables such as Net_Flow, Demand_Pressure, Booking_Intensity, and Notice_Pressure.<br/>
 These may overlap in information content.</p>
 <p>Ridge regression is therefore used as a robustness check.<br/>
 If Ridge performs similarly to ordinary least squares, then the simpler linear interpretation remains reliable.<br/>
@@ -8784,7 +8735,7 @@ If Ridge performs better, that would suggest regularization helps stabilize the 
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [15]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [85]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Regularized benchmark for T+7.</span>
@@ -8828,8 +8779,7 @@ Improvement vs naive: 0.01006
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <p>A <strong>Ridge regression</strong> model was tested at T+7 to check if regularization helps with correlated features.</p>
-<p>The Ridge model still performs better than the naive baseline, but slightly worse than the linear model. The Ridge MAE is <strong>0.04391</strong>, compared to <strong>0.04245</strong> for the linear model.</p>
-<p>This shows that <strong>regularization is not needed</strong>, and the simpler linear model works better.</p>
+<p>The Ridge model still performs better than the naive baseline, but slightly worse than the linear model. This shows that <strong>regularization is not needed</strong>, and the simpler linear model works better.</p>
 </div>
 </div>
 </div>
@@ -8840,7 +8790,7 @@ Improvement vs naive: 0.01006
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h4 id="10.3-Directional-classifiers-across-all-horizons">10.3 Directional classifiers across all horizons<a class="anchor-link" href="#10.3-Directional-classifiers-across-all-horizons">¶</a></h4><p>The directional models are not trying to estimate the exact future occupancy value.<br/>
+<h4 id="9.3-Directional-classifiers-across-all-horizons">9.3 Directional classifiers across all horizons<a class="anchor-link" href="#9.3-Directional-classifiers-across-all-horizons">¶</a></h4><p>The directional models are not trying to estimate the exact future occupancy value.<br/>
 Instead, they ask a more operational question: is occupancy likely to move meaningfully upward or downward?</p>
 <p>This can be more useful in practice because pricing and promotional actions often depend more on expected direction than on exact occupancy percentage.</p>
 <p>The important evaluation criteria here are:</p>
@@ -8858,7 +8808,7 @@ Instead, they ask a more operational question: is occupancy likely to move meani
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [16]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [86]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Run directional classification across all horizons.</span>
@@ -8866,50 +8816,17 @@ Instead, they ask a more operational question: is occupancy likely to move meani
 <span class="c1"># not only for raw predictive accuracy.</span>
 <span class="n">direction_results</span> <span class="o">=</span> <span class="p">{}</span>
 
-<span class="n">direction_results</span><span class="p">[</span><span class="s2">"T+1"</span><span class="p">]</span> <span class="o">=</span> <span class="n">run_direction_workflow</span><span class="p">(</span>
-    <span class="n">train</span><span class="o">=</span><span class="n">train</span><span class="p">,</span>
-    <span class="n">test</span><span class="o">=</span><span class="n">test</span><span class="p">,</span>
-    <span class="n">features</span><span class="o">=</span><span class="n">direction_feature_map</span><span class="p">[</span><span class="s2">"T+1"</span><span class="p">],</span>
-    <span class="n">target_col</span><span class="o">=</span><span class="s2">"Direction_t1"</span><span class="p">,</span>
-    <span class="n">label</span><span class="o">=</span><span class="s2">"T+1"</span><span class="p">,</span>
-    <span class="n">threshold</span><span class="o">=</span><span class="mf">0.55</span>
-<span class="p">)</span>
+<span class="k">for</span> <span class="n">horizon</span><span class="p">,</span> <span class="n">feats</span> <span class="ow">in</span> <span class="n">direction_feature_map</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="n">direction_target</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Direction_</span><span class="si">{</span><span class="n">horizon</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">'+'</span><span class="p">,</span><span class="w"> </span><span class="s1">''</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
 
-<span class="n">direction_results</span><span class="p">[</span><span class="s2">"T+7"</span><span class="p">]</span> <span class="o">=</span> <span class="n">run_direction_workflow</span><span class="p">(</span>
-    <span class="n">train</span><span class="o">=</span><span class="n">train</span><span class="p">,</span>
-    <span class="n">test</span><span class="o">=</span><span class="n">test</span><span class="p">,</span>
-    <span class="n">features</span><span class="o">=</span><span class="n">direction_feature_map</span><span class="p">[</span><span class="s2">"T+7"</span><span class="p">],</span>
-    <span class="n">target_col</span><span class="o">=</span><span class="s2">"Direction_t7"</span><span class="p">,</span>
-    <span class="n">label</span><span class="o">=</span><span class="s2">"T+7"</span><span class="p">,</span>
-    <span class="n">threshold</span><span class="o">=</span><span class="mf">0.55</span>
-<span class="p">)</span>
-
-<span class="n">direction_results</span><span class="p">[</span><span class="s2">"T+14"</span><span class="p">]</span> <span class="o">=</span> <span class="n">run_direction_workflow</span><span class="p">(</span>
-    <span class="n">train</span><span class="o">=</span><span class="n">train</span><span class="p">,</span>
-    <span class="n">test</span><span class="o">=</span><span class="n">test</span><span class="p">,</span>
-    <span class="n">features</span><span class="o">=</span><span class="n">direction_feature_map</span><span class="p">[</span><span class="s2">"T+14"</span><span class="p">],</span>
-    <span class="n">target_col</span><span class="o">=</span><span class="s2">"Direction_t14"</span><span class="p">,</span>
-    <span class="n">label</span><span class="o">=</span><span class="s2">"T+14"</span><span class="p">,</span>
-    <span class="n">threshold</span><span class="o">=</span><span class="mf">0.55</span>
-<span class="p">)</span>
-
-<span class="n">direction_results</span><span class="p">[</span><span class="s2">"T+21"</span><span class="p">]</span> <span class="o">=</span> <span class="n">run_direction_workflow</span><span class="p">(</span>
-    <span class="n">train</span><span class="o">=</span><span class="n">train</span><span class="p">,</span>
-    <span class="n">test</span><span class="o">=</span><span class="n">test</span><span class="p">,</span>
-    <span class="n">features</span><span class="o">=</span><span class="n">direction_feature_map</span><span class="p">[</span><span class="s2">"T+21"</span><span class="p">],</span>
-    <span class="n">target_col</span><span class="o">=</span><span class="s2">"Direction_t21"</span><span class="p">,</span>
-    <span class="n">label</span><span class="o">=</span><span class="s2">"T+21"</span><span class="p">,</span>
-    <span class="n">threshold</span><span class="o">=</span><span class="mf">0.55</span>
-<span class="p">)</span>
-
-<span class="n">direction_results</span><span class="p">[</span><span class="s2">"T+28"</span><span class="p">]</span> <span class="o">=</span> <span class="n">run_direction_workflow</span><span class="p">(</span>
-    <span class="n">train</span><span class="o">=</span><span class="n">train</span><span class="p">,</span>
-    <span class="n">test</span><span class="o">=</span><span class="n">test</span><span class="p">,</span>
-    <span class="n">features</span><span class="o">=</span><span class="n">direction_feature_map</span><span class="p">[</span><span class="s2">"T+28"</span><span class="p">],</span>
-    <span class="n">target_col</span><span class="o">=</span><span class="s2">"Direction_t28"</span><span class="p">,</span>
-    <span class="n">label</span><span class="o">=</span><span class="s2">"T+28"</span><span class="p">,</span>
-    <span class="n">threshold</span><span class="o">=</span><span class="mf">0.55</span>
-<span class="p">)</span>
+    <span class="n">direction_results</span><span class="p">[</span><span class="n">horizon</span><span class="p">]</span> <span class="o">=</span> <span class="n">run_direction_workflow</span><span class="p">(</span>
+        <span class="n">train</span><span class="o">=</span><span class="n">train</span><span class="p">,</span>
+        <span class="n">test</span><span class="o">=</span><span class="n">test</span><span class="p">,</span>
+        <span class="n">features</span><span class="o">=</span><span class="n">feats</span><span class="p">,</span>
+        <span class="n">target_col</span><span class="o">=</span><span class="n">direction_target</span><span class="p">,</span>
+        <span class="n">label</span><span class="o">=</span><span class="n">horizon</span><span class="p">,</span>
+        <span class="n">threshold</span><span class="o">=</span><span class="mf">0.55</span>
+    <span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -9060,9 +8977,7 @@ Name: count, dtype: int64
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <p>Directional models become more useful as the forecast horizon increases.</p>
-<p>At <strong>T+1</strong>, performance is weak, with <strong>0.538 accuracy</strong> and <strong>0.535 coverage</strong>, so the signal is not very reliable. As the horizon increases, both accuracy and coverage improve.</p>
-<p>At T+28, the selective directional classifier reaches 0.797 accuracy and 0.829 coverage among non-stable test cases. This means that, <strong>once small near-flat changes are excluded, the model is able to issue confident directional signals on most meaningful cases</strong>.</p>
-<p>This shows that <strong>longer-horizon direction is much easier to predict</strong> than next-day movement.</p>
+<p>T+1 remains weak, while T+21 and T+28 provide the strongest balance between confidence and operational usefulness. This shows that <strong>longer-horizon direction is much easier to predict</strong> than next-day movement.</p>
 </div>
 </div>
 </div>
@@ -9073,15 +8988,8 @@ Name: count, dtype: int64
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h4 id="10.4-Directional-performance-comparison">10.4 Directional performance comparison<a class="anchor-link" href="#10.4-Directional-performance-comparison">¶</a></h4><p>This table should be interpreted as a balance between <strong>confidence</strong> and <strong>frequency of usable signals</strong>.</p>
-<p>A very high selective accuracy with extremely low coverage may be too cautious to be operationally useful.<br/>
-A very high coverage with weak accuracy may generate too many false actions.</p>
-<p>The most useful horizon is therefore not necessarily the one with the highest accuracy alone, but the one that provides the best balance between:</p>
-<ul>
-<li>enough confident signals</li>
-<li>acceptable correctness on those signals</li>
-<li>alignment with the business decision cycle</li>
-</ul>
+<h4 id="9.4-Directional-performance-comparison">9.4 Directional performance comparison<a class="anchor-link" href="#9.4-Directional-performance-comparison">¶</a></h4><p>This table should be interpreted as a balance between <strong>confidence</strong> and <strong>frequency of usable signals</strong>.</p>
+<p>The most useful directional horizon is not necessarily the one with the highest accuracy alone, but the one that balances accuracy with sufficient coverage.</p>
 </div>
 </div>
 </div>
@@ -9090,17 +8998,16 @@ A very high coverage with weak accuracy may generate too many false actions.</p>
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [17]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [87]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Compare selective directional performance across all horizons.</span>
 <span class="c1"># Best horizons are those that balance good accuracy with sufficient coverage.</span>
+<span class="n">ordered_horizons</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"T+1"</span><span class="p">,</span> <span class="s2">"T+7"</span><span class="p">,</span> <span class="s2">"T+14"</span><span class="p">,</span> <span class="s2">"T+21"</span><span class="p">,</span> <span class="s2">"T+28"</span><span class="p">]</span>
+
 <span class="n">direction_summary</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([</span>
-    <span class="n">direction_results</span><span class="p">[</span><span class="s2">"T+1"</span><span class="p">][</span><span class="s2">"summary"</span><span class="p">],</span>
-    <span class="n">direction_results</span><span class="p">[</span><span class="s2">"T+7"</span><span class="p">][</span><span class="s2">"summary"</span><span class="p">],</span>
-    <span class="n">direction_results</span><span class="p">[</span><span class="s2">"T+14"</span><span class="p">][</span><span class="s2">"summary"</span><span class="p">],</span>
-    <span class="n">direction_results</span><span class="p">[</span><span class="s2">"T+21"</span><span class="p">][</span><span class="s2">"summary"</span><span class="p">],</span>
-    <span class="n">direction_results</span><span class="p">[</span><span class="s2">"T+28"</span><span class="p">][</span><span class="s2">"summary"</span><span class="p">]</span>
+    <span class="n">direction_results</span><span class="p">[</span><span class="n">h</span><span class="p">][</span><span class="s2">"summary"</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">ordered_horizons</span>
 <span class="p">])</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="n">direction_summary</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span>
@@ -9137,10 +9044,7 @@ A very high coverage with weak accuracy may generate too many false actions.</p>
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<p>This pattern is consistent with the business logic.</p>
-<p>Short-term changes are <strong>noisy and driven by persistence</strong>, while longer horizons allow <strong>demand and seasonal effects to build up</strong>.</p>
-<p>As a result, direction is hard to predict at T+1, becomes useful from <strong>T+7</strong>, and is strongest at <strong>T+28</strong>.</p>
-<p>These horizons provide the best balance between <strong>accuracy and usability</strong>.</p>
+<p>This pattern is consistent with the business logic: short-term movement is noisy, while longer horizons allow demand and seasonal effects to build up. As a result, directional signals become more reliable from T+7 onward and are strongest at T+28.</p>
 </div>
 </div>
 </div>
@@ -9151,7 +9055,7 @@ A very high coverage with weak accuracy may generate too many false actions.</p>
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h4 id="10.5-Inspect-selective-outputs-for-the-best-operational-horizons">10.5 Inspect selective outputs for the best operational horizons<a class="anchor-link" href="#10.5-Inspect-selective-outputs-for-the-best-operational-horizons">¶</a></h4><p>Looking at raw examples is useful because it shows whether the model is behaving sensibly on individual dates.</p>
+<h4 id="9.5-Inspect-selective-outputs-for-the-best-operational-horizons">9.5 Inspect selective outputs for the best operational horizons<a class="anchor-link" href="#9.5-Inspect-selective-outputs-for-the-best-operational-horizons">¶</a></h4><p>Looking at raw examples is useful because it shows whether the model is behaving sensibly on individual dates.</p>
 <p>This helps confirm that:</p>
 <ul>
 <li>high-probability cases are being translated into clear signals</li>
@@ -9166,19 +9070,13 @@ A very high coverage with weak accuracy may generate too many false actions.</p>
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [18]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [88]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Inspect examples of selective directional outputs.</span>
-<span class="c1"># This helps verify whether the probability scores and final labels</span>
-<span class="c1"># behave in a sensible operational way.</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Inspect a few selective directional outputs for the strongest horizon.</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">direction_results</span><span class="p">[</span><span class="s2">"T+28"</span><span class="p">][</span><span class="s2">"selective"</span><span class="p">][[</span>
     <span class="s2">"Date"</span><span class="p">,</span> <span class="s2">"Direction_t28"</span><span class="p">,</span> <span class="s2">"Prob_Down"</span><span class="p">,</span> <span class="s2">"Prob_Up"</span><span class="p">,</span> <span class="s2">"Selective_Direction"</span>
-<span class="p">]]</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">20</span><span class="p">))</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="n">direction_results</span><span class="p">[</span><span class="s2">"T+28"</span><span class="p">][</span><span class="s2">"selective"</span><span class="p">][[</span>
-    <span class="s2">"Date"</span><span class="p">,</span> <span class="s2">"Direction_t28"</span><span class="p">,</span> <span class="s2">"Prob_Down"</span><span class="p">,</span> <span class="s2">"Prob_Up"</span><span class="p">,</span> <span class="s2">"Selective_Direction"</span>
-<span class="p">]]</span><span class="o">.</span><span class="n">tail</span><span class="p">(</span><span class="mi">20</span><span class="p">))</span>
+<span class="p">]]</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
 </pre></div>
 </div>
 </div>
@@ -9191,48 +9089,17 @@ A very high coverage with weak accuracy may generate too many false actions.</p>
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>         Date  Direction_t28  Prob_Down   Prob_Up Selective_Direction
-0  2019-01-01              1   0.053220  0.946780                  UP
-1  2019-01-02              1   0.052487  0.947513                  UP
-2  2019-01-03              1   0.071952  0.928048                  UP
-3  2019-01-04              1   0.070198  0.929802                  UP
-4  2019-01-05              1   0.069837  0.930163                  UP
-5  2019-01-06              1   0.074914  0.925086                  UP
-6  2019-01-07              1   0.063537  0.936463                  UP
-7  2019-01-08              1   0.071810  0.928190                  UP
-8  2019-01-09              1   0.078953  0.921047                  UP
-9  2019-01-10              1   0.083535  0.916465                  UP
-10 2019-01-11              1   0.095755  0.904245                  UP
-11 2019-01-12              1   0.103715  0.896285                  UP
-12 2019-01-13              1   0.117929  0.882071                  UP
-13 2019-01-14              1   0.139694  0.860306                  UP
-14 2019-01-15              1   0.166976  0.833024                  UP
-15 2019-01-16              1   0.160861  0.839139                  UP
-16 2019-01-17              1   0.172628  0.827372                  UP
-17 2019-01-18              1   0.168842  0.831158                  UP
-18 2019-01-19              1   0.186379  0.813621                  UP
-19 2019-01-20              1   0.212588  0.787412                  UP
-          Date  Direction_t28  Prob_Down   Prob_Up Selective_Direction
-307 2019-11-13              1   0.543955  0.456045           UNCERTAIN
-308 2019-11-14              1   0.544992  0.455008           UNCERTAIN
-309 2019-11-15              1   0.533300  0.466700           UNCERTAIN
-310 2019-11-16              1   0.610504  0.389496                DOWN
-311 2019-11-17             -1   0.598111  0.401889                DOWN
-312 2019-11-18             -1   0.582325  0.417675                DOWN
-313 2019-11-19             -1   0.626211  0.373789                DOWN
-314 2019-11-20             -1   0.695919  0.304081                DOWN
-315 2019-11-21             -1   0.644829  0.355171                DOWN
-316 2019-11-22             -1   0.585953  0.414047                DOWN
-317 2019-11-23             -1   0.646507  0.353493                DOWN
-318 2019-11-24             -1   0.675448  0.324552                DOWN
-319 2019-11-25             -1   0.660656  0.339344                DOWN
-320 2019-11-26             -1   0.639157  0.360843                DOWN
-321 2019-11-27             -1   0.663363  0.336637                DOWN
-322 2019-11-28             -1   0.700623  0.299377                DOWN
-323 2019-11-29             -1   0.670248  0.329752                DOWN
-324 2019-11-30             -1   0.704051  0.295949                DOWN
-325 2019-12-01             -1   0.721644  0.278356                DOWN
-326 2019-12-02             -1   0.699829  0.300171                DOWN
+<pre>        Date  Direction_t28  Prob_Down   Prob_Up Selective_Direction
+0 2019-01-01              1   0.053220  0.946780                  UP
+1 2019-01-02              1   0.052487  0.947513                  UP
+2 2019-01-03              1   0.071952  0.928048                  UP
+3 2019-01-04              1   0.070198  0.929802                  UP
+4 2019-01-05              1   0.069837  0.930163                  UP
+5 2019-01-06              1   0.074914  0.925086                  UP
+6 2019-01-07              1   0.063537  0.936463                  UP
+7 2019-01-08              1   0.071810  0.928190                  UP
+8 2019-01-09              1   0.078953  0.921047                  UP
+9 2019-01-10              1   0.083535  0.916465                  UP
 </pre>
 </div>
 </div>
@@ -9245,7 +9112,7 @@ A very high coverage with weak accuracy may generate too many false actions.</p>
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h4 id="10.6-Final-multi-horizon-operational-output">10.6 Final multi-horizon operational output<a class="anchor-link" href="#10.6-Final-multi-horizon-operational-output">¶</a></h4>
+<h4 id="9.6-Final-multi-horizon-operational-output">9.6 Final multi-horizon operational output<a class="anchor-link" href="#9.6-Final-multi-horizon-operational-output">¶</a></h4>
 </div>
 </div>
 </div>
@@ -9254,14 +9121,11 @@ A very high coverage with weak accuracy may generate too many false actions.</p>
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [19]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [89]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Extract forecast arrays from the earlier regression results.</span>
-<span class="n">pred_t7</span> <span class="o">=</span> <span class="n">result_t7</span><span class="p">[</span><span class="s2">"pred"</span><span class="p">]</span>
-<span class="n">pred_t14</span> <span class="o">=</span> <span class="n">result_t14</span><span class="p">[</span><span class="s2">"pred"</span><span class="p">]</span>
-<span class="n">pred_t21</span> <span class="o">=</span> <span class="n">result_t21</span><span class="p">[</span><span class="s2">"pred"</span><span class="p">]</span>
-<span class="n">pred_t28</span> <span class="o">=</span> <span class="n">result_t28</span><span class="p">[</span><span class="s2">"pred"</span><span class="p">]</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Extract forecast arrays from the stored model results.</span>
+<span class="n">preds</span> <span class="o">=</span> <span class="p">{</span><span class="n">h</span><span class="p">:</span> <span class="n">r</span><span class="p">[</span><span class="s2">"pred"</span><span class="p">]</span> <span class="k">for</span> <span class="n">h</span><span class="p">,</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">results</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
 
 <span class="c1"># Build the final operational table.</span>
 <span class="c1"># This combines:</span>
@@ -9271,10 +9135,10 @@ A very high coverage with weak accuracy may generate too many false actions.</p>
 <span class="c1"># - action recommendations</span>
 <span class="n">final_output_multi</span> <span class="o">=</span> <span class="n">build_operational_signal_multi</span><span class="p">(</span>
     <span class="n">test</span><span class="o">=</span><span class="n">test</span><span class="p">,</span>
-    <span class="n">pred_t7</span><span class="o">=</span><span class="n">pred_t7</span><span class="p">,</span>
-    <span class="n">pred_t14</span><span class="o">=</span><span class="n">pred_t14</span><span class="p">,</span>
-    <span class="n">pred_t21</span><span class="o">=</span><span class="n">pred_t21</span><span class="p">,</span>
-    <span class="n">pred_t28</span><span class="o">=</span><span class="n">pred_t28</span><span class="p">,</span>
+    <span class="n">pred_t7</span><span class="o">=</span><span class="n">preds</span><span class="p">[</span><span class="s2">"T+7"</span><span class="p">],</span>
+    <span class="n">pred_t14</span><span class="o">=</span><span class="n">preds</span><span class="p">[</span><span class="s2">"T+14"</span><span class="p">],</span>
+    <span class="n">pred_t21</span><span class="o">=</span><span class="n">preds</span><span class="p">[</span><span class="s2">"T+21"</span><span class="p">],</span>
+    <span class="n">pred_t28</span><span class="o">=</span><span class="n">preds</span><span class="p">[</span><span class="s2">"T+28"</span><span class="p">],</span>
     <span class="n">model_t7</span><span class="o">=</span><span class="n">direction_results</span><span class="p">[</span><span class="s2">"T+7"</span><span class="p">][</span><span class="s2">"model"</span><span class="p">],</span>
     <span class="n">model_t14</span><span class="o">=</span><span class="n">direction_results</span><span class="p">[</span><span class="s2">"T+14"</span><span class="p">][</span><span class="s2">"model"</span><span class="p">],</span>
     <span class="n">model_t21</span><span class="o">=</span><span class="n">direction_results</span><span class="p">[</span><span class="s2">"T+21"</span><span class="p">][</span><span class="s2">"model"</span><span class="p">],</span>
@@ -9431,7 +9295,7 @@ A very high coverage with weak accuracy may generate too many false actions.</p>
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h3 id="11.Save-Model-and-Metadata">11.Save Model and Metadata<a class="anchor-link" href="#11.Save-Model-and-Metadata">¶</a></h3>
+<h3 id="10.-Save-Model-and-metadata">10. Save Model and metadata<a class="anchor-link" href="#10.-Save-Model-and-metadata">¶</a></h3>
 </div>
 </div>
 </div>
@@ -9440,7 +9304,7 @@ A very high coverage with weak accuracy may generate too many false actions.</p>
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [20]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [90]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Import save helper</span>
@@ -9454,11 +9318,11 @@ A very high coverage with weak accuracy may generate too many false actions.</p>
 
 <span class="c1"># Save everything</span>
 <span class="n">point_models</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">"t1"</span><span class="p">:</span> <span class="n">result_t1</span><span class="p">[</span><span class="s2">"model"</span><span class="p">],</span>
-    <span class="s2">"t7"</span><span class="p">:</span> <span class="n">result_t7</span><span class="p">[</span><span class="s2">"model"</span><span class="p">],</span>
-    <span class="s2">"t14"</span><span class="p">:</span> <span class="n">result_t14</span><span class="p">[</span><span class="s2">"model"</span><span class="p">],</span>
-    <span class="s2">"t21"</span><span class="p">:</span> <span class="n">result_t21</span><span class="p">[</span><span class="s2">"model"</span><span class="p">],</span>
-    <span class="s2">"t28"</span><span class="p">:</span> <span class="n">result_t28</span><span class="p">[</span><span class="s2">"model"</span><span class="p">],</span>
+    <span class="s2">"t1"</span><span class="p">:</span> <span class="n">results</span><span class="p">[</span><span class="s2">"T+1"</span><span class="p">][</span><span class="s2">"model"</span><span class="p">],</span>
+    <span class="s2">"t7"</span><span class="p">:</span> <span class="n">results</span><span class="p">[</span><span class="s2">"T+7"</span><span class="p">][</span><span class="s2">"model"</span><span class="p">],</span>
+    <span class="s2">"t14"</span><span class="p">:</span> <span class="n">results</span><span class="p">[</span><span class="s2">"T+14"</span><span class="p">][</span><span class="s2">"model"</span><span class="p">],</span>
+    <span class="s2">"t21"</span><span class="p">:</span> <span class="n">results</span><span class="p">[</span><span class="s2">"T+21"</span><span class="p">][</span><span class="s2">"model"</span><span class="p">],</span>
+    <span class="s2">"t28"</span><span class="p">:</span> <span class="n">results</span><span class="p">[</span><span class="s2">"T+28"</span><span class="p">][</span><span class="s2">"model"</span><span class="p">],</span>
 <span class="p">}</span>
 
 <span class="n">direction_models</span> <span class="o">=</span> <span class="p">{</span>
@@ -9511,20 +9375,20 @@ A very high coverage with weak accuracy may generate too many false actions.</p>
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h3 id="12.-Final-summary">12. Final summary<a class="anchor-link" href="#12.-Final-summary">¶</a></h3><p>This notebook extended the project from data preparation into forecasting and operational decision support.</p>
-<p>The first key result is that forecasting performance depends strongly on the prediction horizon. At <strong>T+1</strong>, the linear regression model did <strong>not</strong> beat the naive persistence benchmark. The model MAE was <strong>0.01325</strong>, compared with <strong>0.01210</strong> for the naive baseline, confirming that next-day occupancy is highly <strong>persistence-driven</strong>. In other words, current occupancy already contains most of the useful short-term information, and additional structure does not improve immediate one-day-ahead point forecasts.</p>
-<p>However, the picture changes clearly at medium horizons. From <strong>T+7 onward</strong>, the models consistently outperform their horizon-specific naive baselines:</p>
+<h3 id="11.-Final-summary">11. Final summary<a class="anchor-link" href="#11.-Final-summary">¶</a></h3><p>This notebook extends the project from data preparation into forecasting and operational decision support.</p>
+<p>The first key result is that forecasting performance depends strongly on the prediction horizon. At <strong>T+1</strong>, the linear regression model does <strong>not</strong> beat the naive persistence benchmark (MAE <strong>0.01325 vs 0.01210</strong>), confirming that next-day occupancy is highly <strong>persistence-driven</strong>. Current occupancy already contains most of the useful short-term information, and additional structure does not improve one-day-ahead forecasts.</p>
+<p>From <strong>T+7 onward</strong>, the models consistently outperform their horizon-specific naive baselines:</p>
 <ul>
 <li><strong>T+7:</strong> MAE 0.04245 vs naive 0.05397</li>
 <li><strong>T+14:</strong> MAE 0.05677 vs naive 0.08272</li>
 <li><strong>T+21:</strong> MAE 0.06736 vs naive 0.10679</li>
 <li><strong>T+28:</strong> MAE 0.07194 vs naive 0.11337</li>
 </ul>
-<p>This shows that the engineered features add real predictive value once bookings, notices, demand pressure, and seasonality have enough time to propagate into realized occupancy. The model is therefore much more useful beyond the immediate next-day horizon, with the strongest absolute MAE improvement observed at <strong>T+21 and T+28</strong>.</p>
-<p>The guardrail analysis adds a second important result. Forecast error is generally higher during <strong>unstable periods</strong>, but the effect is <strong>not uniform across all horizons</strong>. The unstable-minus-stable MAE gap is <strong>0.00204 at T+1</strong>, <strong>0.00393 at T+7</strong>, <strong>0.00094 at T+14</strong>, <strong>0.00713 at T+21</strong>, and <strong>0.02072 at T+28</strong>. This suggests that instability becomes increasingly relevant at <strong>longer horizons</strong>, even if the signal is weak or negligible at some intermediate distances. In practical terms, this supports using the guardrail primarily as a <strong>caution filter for medium- and long-horizon forecasts</strong>, rather than treating it as a universal reliability separator.</p>
-<p>A delta-based formulation was also tested for <strong>T+1</strong>, but it produced the same overall result as direct level forecasting. This indicates that the main difficulty at the one-day horizon is not whether the target is defined as level or change; rather, it is that occupancy at this horizon is already so <strong>persistence-dominated</strong> that a more complex model has little room to improve on the naive baseline.</p>
-<p>A Ridge regression benchmark was tested at <strong>T+7</strong> as a robustness check. It remained better than the naive baseline, but performed slightly worse than the standard linear regression model (<strong>0.04391 vs 0.04245 MAE</strong>). This suggests that regularization was not necessary in this setting, and that the simpler linear specification remained sufficient.</p>
-<p>The most operationally interesting result comes from the directional models. While point forecasting is strongest at medium horizons, directional classification improves even more clearly with forecast distance. The selective directional layer shows both rising accuracy and rising coverage within meaningful non-stable cases. In other words, once very small near-flat occupancy changes are excluded, the model becomes increasingly able to issue confident and correct UP/DOWN signals as the forecast horizon increases:</p>
+<p>This shows that bookings, notices, demand pressure, and seasonality need time to propagate into occupancy. The model becomes significantly more useful beyond the immediate horizon, with the largest improvements at <strong>T+21 and T+28</strong>.</p>
+<p>The guardrail analysis adds a second insight. Forecast error is generally higher during <strong>unstable periods</strong>, but the effect is not uniform across horizons. The difference is small at short horizons and increases at longer ones, reaching its highest level at <strong>T+28</strong>. This supports using the guardrail mainly as a <strong>caution signal for medium- and long-horizon forecasts</strong>, rather than as a strict rule.</p>
+<p>A delta-based formulation was tested for <strong>T+1</strong>, but did not improve performance. This confirms that the limitation at this horizon is not the model formulation, but the dominance of persistence.</p>
+<p>A Ridge regression benchmark at <strong>T+7</strong> also did not improve results, performing slightly worse than the linear model (<strong>0.04391 vs 0.04245 MAE</strong>). This suggests that <strong>regularization is not needed</strong>, and the simpler linear specification is sufficient.</p>
+<p>The most operationally relevant result comes from the directional models. While point forecasts improve with horizon, directional classification improves even more clearly, with both accuracy and coverage increasing:</p>
 <ul>
 <li><strong>T+1:</strong> coverage 0.535, selective accuracy 0.538</li>
 <li><strong>T+7:</strong> coverage 0.706, selective accuracy 0.635</li>
@@ -9532,15 +9396,15 @@ A very high coverage with weak accuracy may generate too many false actions.</p>
 <li><strong>T+21:</strong> coverage 0.794, selective accuracy 0.732</li>
 <li><strong>T+28:</strong> coverage 0.829, selective accuracy <strong>0.797</strong></li>
 </ul>
-<p>This pattern is especially important because accuracy and coverage improve together. That means the longer-horizon directional signals are not only more correct, but also usable more often. Operationally, this suggests that medium- and longer-horizon direction is more structurally predictable than immediate next-day movement. In particular, <strong>T+21 and especially T+28</strong> provide the strongest balance between confidence and operational usefulness.</p>
-<p>The final multi-horizon operational table combines three layers into one decision-support output:</p>
+<p>This means that longer-horizon directional signals are not only more accurate, but also usable more often. In particular, <strong>T+21 and T+28</strong> provide the best balance between confidence and operational usefulness.</p>
+<p>The final multi-horizon output combines:</p>
 <ul>
 <li>point forecasts of future occupancy</li>
 <li>directional probabilities and selective UP/DOWN signals</li>
-<li>a guardrail-based confidence filter and action rules</li>
+<li>a guardrail-based confidence filter</li>
 </ul>
-<p>This moves the project beyond pure forecasting. The output is designed not only to estimate future occupancy, but to support pricing, promotion, and availability decisions under different confidence conditions. Strong agreement across longer horizons triggers more aggressive action, while unstable periods are explicitly downgraded to monitoring mode.</p>
-<p>Overall, this part shows that the project is most valuable not as a single next-day forecasting model, but as a <strong>multi-layer operational framework</strong>. The main insight is that <strong>short-horizon occupancy is dominated by persistence</strong>, while <strong>medium- and longer-horizon forecasts and especially longer-horizon directional signals become substantially more informative</strong> once seasonal and demand-flow dynamics are allowed time to act. This makes the framework much more suitable for operational planning than a one-step forecasting exercise alone.</p>
+<p>This shifts the project from pure forecasting to <strong>decision support</strong>, where outputs are interpreted in terms of confidence and risk.</p>
+<p>Overall, the project is most valuable not as a next-day forecasting model, but as a <strong>multi-layer operational framework</strong>. Short-horizon occupancy is dominated by persistence, while <strong>medium- and longer-horizon forecasts — especially directional signals — become substantially more informative</strong> once seasonal and demand dynamics have time to act.</p>
 </div>
 </div>
 </div>
@@ -9551,7 +9415,7 @@ A very high coverage with weak accuracy may generate too many false actions.</p>
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h3 id="13.-Visual-Diagnostics-and-Model-Validation">13. Visual Diagnostics and Model Validation<a class="anchor-link" href="#13.-Visual-Diagnostics-and-Model-Validation">¶</a></h3>
+<h3 id="12.-Visual-Diagnostics-and-Model-Validation">12. Visual Diagnostics and Model Validation<a class="anchor-link" href="#12.-Visual-Diagnostics-and-Model-Validation">¶</a></h3>
 </div>
 </div>
 </div>
@@ -9562,7 +9426,7 @@ A very high coverage with weak accuracy may generate too many false actions.</p>
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<p>13.1 Directional Model Trade-off: Coverage vs Accuracy</p>
+<p>12.1 Directional Model Trade-off: Coverage vs Accuracy</p>
 </div>
 </div>
 </div>
@@ -9571,7 +9435,7 @@ A very high coverage with weak accuracy may generate too many false actions.</p>
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [21]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [91]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
@@ -9612,7 +9476,7 @@ A very high coverage with weak accuracy may generate too many false actions.</p>
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h4 id="13.2-Historical-Spike-Tendency-and-T+28-Directional-Signal">13.2 Historical Spike Tendency and T+28 Directional Signal<a class="anchor-link" href="#13.2-Historical-Spike-Tendency-and-T+28-Directional-Signal">¶</a></h4><p>The top panel shows the <strong>historical week-of-year tendency for short-term spikes</strong>, estimated from the training data only and mapped onto the test period. The bottom panel compares the <strong>actual 28-day occupancy change</strong> with the model’s <strong>T+28 directional confidence score</strong>. Positive values indicate upward movement or upward confidence, while negative values indicate downward movement or downward confidence.</p>
+<h4 id="12.2-Historical-Spike-Tendency-and-T+28-Directional-Signal">12.2 Historical Spike Tendency and T+28 Directional Signal<a class="anchor-link" href="#12.2-Historical-Spike-Tendency-and-T+28-Directional-Signal">¶</a></h4><p>The top panel shows the <strong>historical week-of-year tendency for short-term spikes</strong>, estimated from the training data only and mapped onto the test period. The bottom panel compares the <strong>actual 28-day occupancy change</strong> with the model’s <strong>T+28 directional confidence score</strong>. Positive values indicate upward movement or upward confidence, while negative values indicate downward movement or downward confidence.</p>
 </div>
 </div>
 </div>
@@ -9621,7 +9485,7 @@ A very high coverage with weak accuracy may generate too many false actions.</p>
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [22]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [92]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.dates</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mdates</span>
@@ -9633,7 +9497,7 @@ A very high coverage with weak accuracy may generate too many false actions.</p>
 <span class="n">df_t28</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
     <span class="s2">"Date"</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">test</span><span class="p">[</span><span class="s2">"Date"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">),</span>
     <span class="s2">"Current"</span><span class="p">:</span> <span class="n">test</span><span class="p">[</span><span class="s2">"Occupancy"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
-    <span class="s2">"Actual_Future"</span><span class="p">:</span> <span class="n">result_t28</span><span class="p">[</span><span class="s2">"y_test"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+    <span class="s2">"Actual_Future"</span><span class="p">:</span> <span class="n">results</span><span class="p">[</span><span class="s2">"T+28"</span><span class="p">][</span><span class="s2">"y_test"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
     <span class="s2">"Prob_Down"</span><span class="p">:</span> <span class="n">final_output_multi</span><span class="p">[</span><span class="s2">"Prob_Down_t28"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
     <span class="s2">"Prob_Up"</span><span class="p">:</span> <span class="n">final_output_multi</span><span class="p">[</span><span class="s2">"Prob_Up_t28"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
 <span class="p">})</span>
@@ -9814,7 +9678,7 @@ A very high coverage with weak accuracy may generate too many false actions.</p>
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h3 id="14.-Diagnostic-Prints-for-Reliability-/-Calibration-Analysis">14. Diagnostic Prints for Reliability / Calibration Analysis<a class="anchor-link" href="#14.-Diagnostic-Prints-for-Reliability-/-Calibration-Analysis">¶</a></h3>
+<h3 id="13.-Save-outputs-for-downstream-calibration-and-scoring">13. Save outputs for downstream calibration and scoring<a class="anchor-link" href="#13.-Save-outputs-for-downstream-calibration-and-scoring">¶</a></h3>
 </div>
 </div>
 </div>
@@ -9823,113 +9687,40 @@ A very high coverage with weak accuracy may generate too many false actions.</p>
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [93]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">pd</span><span class="o">.</span><span class="n">set_option</span><span class="p">(</span><span class="s2">"display.max_columns"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-<span class="n">pd</span><span class="o">.</span><span class="n">set_option</span><span class="p">(</span><span class="s2">"display.width"</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
-<span class="n">pd</span><span class="o">.</span><span class="n">set_option</span><span class="p">(</span><span class="s2">"display.max_colwidth"</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Save a compact operational output from Notebook 2 for reference.</span>
+<span class="n">final_output_multi</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="s2">"operational_output_nb2.csv"</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
-<span class="c1"># 1. Directional selective outputs: T+1</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span> <span class="o">+</span> <span class="s2">"="</span><span class="o">*</span><span class="mi">80</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"1. DIRECTIONAL SELECTIVE OUTPUTS: T+1"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"="</span><span class="o">*</span><span class="mi">80</span><span class="p">)</span>
-
-<span class="n">diag_direction_t1</span> <span class="o">=</span> <span class="n">direction_results</span><span class="p">[</span><span class="s2">"T+1"</span><span class="p">][</span><span class="s2">"selective"</span><span class="p">][[</span>
-    <span class="s2">"Date"</span><span class="p">,</span> <span class="s2">"Prob_Down"</span><span class="p">,</span> <span class="s2">"Prob_Up"</span><span class="p">,</span> <span class="s2">"Selective_Direction"</span><span class="p">,</span> <span class="s2">"True_Label"</span>
-<span class="p">]]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="n">diag_direction_t1</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">50</span><span class="p">))</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Shape:"</span><span class="p">,</span> <span class="n">diag_direction_t1</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
-
-<span class="c1"># 2. Directional selective outputs: T+7</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span> <span class="o">+</span> <span class="s2">"="</span><span class="o">*</span><span class="mi">80</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"2. DIRECTIONAL SELECTIVE OUTPUTS: T+7"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"="</span><span class="o">*</span><span class="mi">80</span><span class="p">)</span>
-
-<span class="n">diag_direction_t7</span> <span class="o">=</span> <span class="n">direction_results</span><span class="p">[</span><span class="s2">"T+7"</span><span class="p">][</span><span class="s2">"selective"</span><span class="p">][[</span>
-    <span class="s2">"Date"</span><span class="p">,</span> <span class="s2">"Prob_Down"</span><span class="p">,</span> <span class="s2">"Prob_Up"</span><span class="p">,</span> <span class="s2">"Selective_Direction"</span><span class="p">,</span> <span class="s2">"True_Label"</span>
-<span class="p">]]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="n">diag_direction_t7</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">50</span><span class="p">))</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Shape:"</span><span class="p">,</span> <span class="n">diag_direction_t7</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
-
-<span class="c1"># 3. Final operational output (key columns only)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span> <span class="o">+</span> <span class="s2">"="</span><span class="o">*</span><span class="mi">80</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"3. FINAL OPERATIONAL OUTPUT (key columns)"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"="</span><span class="o">*</span><span class="mi">80</span><span class="p">)</span>
-
-<span class="n">diag_final_output_multi</span> <span class="o">=</span> <span class="n">final_output_multi</span><span class="p">[[</span>
-    <span class="s2">"Date"</span><span class="p">,</span>
-    <span class="s2">"Occupancy"</span><span class="p">,</span>
-    <span class="s2">"Prob_Down_t7"</span><span class="p">,</span> <span class="s2">"Prob_Up_t7"</span><span class="p">,</span> <span class="s2">"Direction_t7"</span><span class="p">,</span>
-    <span class="s2">"Prob_Down_t14"</span><span class="p">,</span> <span class="s2">"Prob_Up_t14"</span><span class="p">,</span> <span class="s2">"Direction_t14"</span><span class="p">,</span>
-    <span class="s2">"Prob_Down_t21"</span><span class="p">,</span> <span class="s2">"Prob_Up_t21"</span><span class="p">,</span> <span class="s2">"Direction_t21"</span><span class="p">,</span>
-    <span class="s2">"Prob_Down_t28"</span><span class="p">,</span> <span class="s2">"Prob_Up_t28"</span><span class="p">,</span> <span class="s2">"Direction_t28"</span><span class="p">,</span>
-    <span class="s2">"Guardrail"</span><span class="p">,</span> <span class="s2">"Confidence"</span><span class="p">,</span> <span class="s2">"Action"</span>
-<span class="p">]]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="n">diag_final_output_multi</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">50</span><span class="p">))</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Shape:"</span><span class="p">,</span> <span class="n">diag_final_output_multi</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
-
-<span class="c1"># 4. Raw test data needed for calibration</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span> <span class="o">+</span> <span class="s2">"="</span><span class="o">*</span><span class="mi">80</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"4. RAW TEST DATA (key columns)"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"="</span><span class="o">*</span><span class="mi">80</span><span class="p">)</span>
-
-<span class="n">test_cols</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="s2">"Date"</span><span class="p">,</span> <span class="s2">"Occupancy"</span><span class="p">,</span>
-    <span class="s2">"target_t1"</span><span class="p">,</span> <span class="s2">"target_t7"</span><span class="p">,</span> <span class="s2">"target_t14"</span><span class="p">,</span> <span class="s2">"target_t21"</span><span class="p">,</span> <span class="s2">"target_t28"</span><span class="p">,</span>
-    <span class="s2">"Direction_t1"</span><span class="p">,</span> <span class="s2">"Direction_t7"</span><span class="p">,</span> <span class="s2">"Direction_t14"</span><span class="p">,</span> <span class="s2">"Direction_t21"</span><span class="p">,</span> <span class="s2">"Direction_t28"</span><span class="p">,</span>
-    <span class="s2">"Booking_Intensity"</span><span class="p">,</span> <span class="s2">"Notice_Pressure"</span>
-<span class="p">]</span>
-<span class="n">test_cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">test_cols</span> <span class="k">if</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">test</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span>
-
-<span class="n">diag_test_keycols</span> <span class="o">=</span> <span class="n">test</span><span class="p">[</span><span class="n">test_cols</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="n">diag_test_keycols</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">50</span><span class="p">))</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Shape:"</span><span class="p">,</span> <span class="n">diag_test_keycols</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
-
-<span class="c1"># 5. Point predictions vs actuals</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span> <span class="o">+</span> <span class="s2">"="</span><span class="o">*</span><span class="mi">80</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"5. POINT PREDICTIONS VS ACTUALS"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"="</span><span class="o">*</span><span class="mi">80</span><span class="p">)</span>
-
-<span class="n">diag_pred_check</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
-    <span class="s2">"Date"</span><span class="p">:</span> <span class="n">test</span><span class="p">[</span><span class="s2">"Date"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
-    <span class="s2">"Occupancy"</span><span class="p">:</span> <span class="n">test</span><span class="p">[</span><span class="s2">"Occupancy"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
-    <span class="s2">"Actual_t1"</span><span class="p">:</span> <span class="n">result_t1</span><span class="p">[</span><span class="s2">"y_test"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
-    <span class="s2">"Pred_t1"</span><span class="p">:</span> <span class="n">result_t1</span><span class="p">[</span><span class="s2">"pred"</span><span class="p">],</span>
-    <span class="s2">"Actual_t7"</span><span class="p">:</span> <span class="n">result_t7</span><span class="p">[</span><span class="s2">"y_test"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
-    <span class="s2">"Pred_t7"</span><span class="p">:</span> <span class="n">result_t7</span><span class="p">[</span><span class="s2">"pred"</span><span class="p">],</span>
-    <span class="s2">"Actual_t14"</span><span class="p">:</span> <span class="n">result_t14</span><span class="p">[</span><span class="s2">"y_test"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
-    <span class="s2">"Pred_t14"</span><span class="p">:</span> <span class="n">result_t14</span><span class="p">[</span><span class="s2">"pred"</span><span class="p">],</span>
-    <span class="s2">"Actual_t21"</span><span class="p">:</span> <span class="n">result_t21</span><span class="p">[</span><span class="s2">"y_test"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
-    <span class="s2">"Pred_t21"</span><span class="p">:</span> <span class="n">result_t21</span><span class="p">[</span><span class="s2">"pred"</span><span class="p">],</span>
-    <span class="s2">"Actual_t28"</span><span class="p">:</span> <span class="n">result_t28</span><span class="p">[</span><span class="s2">"y_test"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
-    <span class="s2">"Pred_t28"</span><span class="p">:</span> <span class="n">result_t28</span><span class="p">[</span><span class="s2">"pred"</span><span class="p">],</span>
-<span class="p">})</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="n">diag_pred_check</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">50</span><span class="p">))</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Shape:"</span><span class="p">,</span> <span class="n">diag_pred_check</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
-
-<span class="c1"># 6. Export only the files needed in Notebook 03</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span> <span class="o">+</span> <span class="s2">"="</span><span class="o">*</span><span class="mi">80</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"6. EXPORT CORE FILES FOR NOTEBOOK 03"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"="</span><span class="o">*</span><span class="mi">80</span><span class="p">)</span>
-
-<span class="n">diag_direction_t1</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="s2">"diag_direction_t1.csv"</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-<span class="n">diag_direction_t7</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="s2">"diag_direction_t7.csv"</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-<span class="n">diag_final_output_multi</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="s2">"diag_final_output_multi.csv"</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-<span class="n">diag_pred_check</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="s2">"diag_pred_check.csv"</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-<span class="n">diag_test_keycols</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="s2">"diag_test_keycols.csv"</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="c1"># Save directional performance summary for reference.</span>
+<span class="n">direction_summary</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="s2">"direction_summary.csv"</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="s2">"Saved:"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"- diag_direction_t1.csv"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"- diag_direction_t7.csv"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"- diag_final_output_multi.csv"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"- diag_pred_check.csv"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">"- diag_test_keycols.csv"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"- operational_output_nb2.csv"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"- direction_summary.csv"</span><span class="p">)</span>
+
+<span class="n">pred_check</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+    <span class="s2">"Date"</span><span class="p">:</span> <span class="n">test</span><span class="p">[</span><span class="s2">"Date"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+    <span class="s2">"Occupancy"</span><span class="p">:</span> <span class="n">test</span><span class="p">[</span><span class="s2">"Occupancy"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+    <span class="s2">"Actual_t1"</span><span class="p">:</span> <span class="n">results</span><span class="p">[</span><span class="s2">"T+1"</span><span class="p">][</span><span class="s2">"y_test"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+    <span class="s2">"Pred_t1"</span><span class="p">:</span> <span class="n">results</span><span class="p">[</span><span class="s2">"T+1"</span><span class="p">][</span><span class="s2">"pred"</span><span class="p">],</span>
+    <span class="s2">"Actual_t7"</span><span class="p">:</span> <span class="n">results</span><span class="p">[</span><span class="s2">"T+7"</span><span class="p">][</span><span class="s2">"y_test"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+    <span class="s2">"Pred_t7"</span><span class="p">:</span> <span class="n">results</span><span class="p">[</span><span class="s2">"T+7"</span><span class="p">][</span><span class="s2">"pred"</span><span class="p">],</span>
+    <span class="s2">"Actual_t14"</span><span class="p">:</span> <span class="n">results</span><span class="p">[</span><span class="s2">"T+14"</span><span class="p">][</span><span class="s2">"y_test"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+    <span class="s2">"Pred_t14"</span><span class="p">:</span> <span class="n">results</span><span class="p">[</span><span class="s2">"T+14"</span><span class="p">][</span><span class="s2">"pred"</span><span class="p">],</span>
+    <span class="s2">"Actual_t21"</span><span class="p">:</span> <span class="n">results</span><span class="p">[</span><span class="s2">"T+21"</span><span class="p">][</span><span class="s2">"y_test"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+    <span class="s2">"Pred_t21"</span><span class="p">:</span> <span class="n">results</span><span class="p">[</span><span class="s2">"T+21"</span><span class="p">][</span><span class="s2">"pred"</span><span class="p">],</span>
+    <span class="s2">"Actual_t28"</span><span class="p">:</span> <span class="n">results</span><span class="p">[</span><span class="s2">"T+28"</span><span class="p">][</span><span class="s2">"y_test"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+    <span class="s2">"Pred_t28"</span><span class="p">:</span> <span class="n">results</span><span class="p">[</span><span class="s2">"T+28"</span><span class="p">][</span><span class="s2">"pred"</span><span class="p">],</span>
+<span class="p">})</span>
+
+<span class="n">pred_check</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="s2">"pred_check_nb2.csv"</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Saved:"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"- operational_output_nb2.csv"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"- direction_summary.csv"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"- pred_check_nb2.csv"</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -9942,353 +9733,13 @@ A very high coverage with weak accuracy may generate too many false actions.</p>
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>
-================================================================================
-1. DIRECTIONAL SELECTIVE OUTPUTS: T+1
-================================================================================
-         Date  Prob_Down   Prob_Up Selective_Direction True_Label
-0  2019-01-01   0.623047  0.376953                DOWN         UP
-1  2019-01-03   0.621443  0.378557                DOWN       DOWN
-2  2019-01-04   0.596257  0.403743                DOWN         UP
-3  2019-01-05   0.572041  0.427959                DOWN         UP
-4  2019-01-06   0.579259  0.420741                DOWN         UP
-5  2019-01-07   0.610715  0.389285                DOWN         UP
-6  2019-01-08   0.217366  0.782634                  UP         UP
-7  2019-01-09   0.237382  0.762618                  UP         UP
-8  2019-01-10   0.236131  0.763869                  UP         UP
-9  2019-01-11   0.219540  0.780460                  UP         UP
-10 2019-01-12   0.217365  0.782635                  UP         UP
-11 2019-01-13   0.231584  0.768416                  UP         UP
-12 2019-01-15   0.303481  0.696519                  UP         UP
-13 2019-01-16   0.331625  0.668375                  UP       DOWN
-14 2019-01-17   0.331277  0.668723                  UP         UP
-15 2019-01-18   0.298156  0.701844                  UP       DOWN
-16 2019-01-19   0.290458  0.709542                  UP       DOWN
-17 2019-01-20   0.292251  0.707749                  UP       DOWN
-18 2019-01-21   0.322093  0.677907                  UP       DOWN
-19 2019-01-22   0.346881  0.653119                  UP       DOWN
-20 2019-01-25   0.310274  0.689726                  UP       DOWN
-21 2019-01-28   0.288694  0.711306                  UP         UP
-22 2019-01-29   0.312703  0.687297                  UP       DOWN
-23 2019-01-30   0.321198  0.678802                  UP         UP
-24 2019-01-31   0.300348  0.699652                  UP       DOWN
-25 2019-02-01   0.274957  0.725043                  UP         UP
-26 2019-02-02   0.243075  0.756925                  UP         UP
-27 2019-02-03   0.256141  0.743859                  UP         UP
-28 2019-02-05   0.336628  0.663372                  UP       DOWN
-29 2019-02-06   0.343662  0.656338                  UP         UP
-30 2019-02-08   0.308503  0.691497                  UP       DOWN
-31 2019-02-09   0.297069  0.702931                  UP         UP
-32 2019-02-10   0.301304  0.698696                  UP       DOWN
-33 2019-02-12   0.376029  0.623971                  UP         UP
-34 2019-02-13   0.380509  0.619491                  UP         UP
-35 2019-02-14   0.387817  0.612183                  UP         UP
-36 2019-02-19   0.411002  0.588998                  UP       DOWN
-37 2019-02-21   0.425075  0.574925                  UP         UP
-38 2019-02-22   0.394728  0.605272                  UP       DOWN
-39 2019-02-23   0.373963  0.626037                  UP         UP
-40 2019-02-24   0.376067  0.623933                  UP       DOWN
-41 2019-02-26   0.451673  0.548327           UNCERTAIN         UP
-42 2019-02-27   0.461111  0.538889           UNCERTAIN       DOWN
-43 2019-02-28   0.451954  0.548046           UNCERTAIN       DOWN
-44 2019-03-01   0.413374  0.586626                  UP       DOWN
-45 2019-03-03   0.394425  0.605575                  UP         UP
-46 2019-03-07   0.456157  0.543843           UNCERTAIN         UP
-47 2019-03-09   0.398621  0.601379                  UP       DOWN
-48 2019-03-14   0.465918  0.534082           UNCERTAIN         UP
-49 2019-03-15   0.445776  0.554224                  UP         UP
-
-Shape: (198, 5)
-
-================================================================================
-2. DIRECTIONAL SELECTIVE OUTPUTS: T+7
-================================================================================
-         Date  Prob_Down   Prob_Up Selective_Direction True_Label
-0  2019-01-01   0.455473  0.544527           UNCERTAIN         UP
-1  2019-01-02   0.472617  0.527383           UNCERTAIN         UP
-2  2019-01-03   0.599575  0.400425                DOWN         UP
-3  2019-01-04   0.494203  0.505797           UNCERTAIN         UP
-4  2019-01-05   0.476671  0.523329           UNCERTAIN         UP
-5  2019-01-06   0.477099  0.522901           UNCERTAIN         UP
-6  2019-01-07   0.435296  0.564704                  UP         UP
-7  2019-01-08   0.132554  0.867446                  UP         UP
-8  2019-01-09   0.151089  0.848911                  UP         UP
-9  2019-01-10   0.150501  0.849499                  UP         UP
-10 2019-01-11   0.144705  0.855295                  UP         UP
-11 2019-01-12   0.128371  0.871629                  UP         UP
-12 2019-01-13   0.153143  0.846857                  UP         UP
-13 2019-01-14   0.192777  0.807223                  UP       DOWN
-14 2019-01-15   0.248462  0.751538                  UP       DOWN
-15 2019-01-16   0.202765  0.797235                  UP       DOWN
-16 2019-01-17   0.176874  0.823126                  UP       DOWN
-17 2019-01-18   0.192888  0.807112                  UP       DOWN
-18 2019-01-19   0.203986  0.796014                  UP       DOWN
-19 2019-01-20   0.227369  0.772631                  UP       DOWN
-20 2019-01-21   0.334877  0.665123                  UP       DOWN
-21 2019-01-22   0.335215  0.664785                  UP       DOWN
-22 2019-01-23   0.280047  0.719953                  UP       DOWN
-23 2019-01-24   0.310583  0.689417                  UP       DOWN
-24 2019-01-25   0.289491  0.710509                  UP       DOWN
-25 2019-01-26   0.259057  0.740943                  UP         UP
-26 2019-01-27   0.287854  0.712146                  UP         UP
-27 2019-01-28   0.290442  0.709558                  UP         UP
-28 2019-01-29   0.262201  0.737799                  UP         UP
-29 2019-01-30   0.251042  0.748958                  UP         UP
-30 2019-01-31   0.283990  0.716010                  UP         UP
-31 2019-02-01   0.242068  0.757932                  UP         UP
-32 2019-02-02   0.230262  0.769738                  UP         UP
-33 2019-02-03   0.250580  0.749420                  UP         UP
-34 2019-02-04   0.285463  0.714537                  UP         UP
-35 2019-02-05   0.236237  0.763763                  UP         UP
-36 2019-02-06   0.222040  0.777960                  UP         UP
-37 2019-02-07   0.252613  0.747387                  UP         UP
-38 2019-02-08   0.231657  0.768343                  UP         UP
-39 2019-02-09   0.238757  0.761243                  UP         UP
-40 2019-02-10   0.252474  0.747526                  UP         UP
-41 2019-02-11   0.312006  0.687994                  UP         UP
-42 2019-02-12   0.303900  0.696100                  UP         UP
-43 2019-02-13   0.232799  0.767201                  UP         UP
-44 2019-02-16   0.194928  0.805072                  UP       DOWN
-45 2019-02-17   0.292600  0.707400                  UP         UP
-46 2019-02-18   0.299207  0.700793                  UP         UP
-47 2019-02-19   0.330461  0.669539                  UP         UP
-48 2019-02-20   0.326139  0.673861                  UP         UP
-49 2019-02-21   0.317176  0.682824                  UP         UP
-
-Shape: (299, 5)
-
-================================================================================
-3. FINAL OPERATIONAL OUTPUT (key columns)
-================================================================================
-         Date  Occupancy  Prob_Down_t7  Prob_Up_t7 Direction_t7  Prob_Down_t14  Prob_Up_t14 Direction_t14  Prob_Down_t21  Prob_Up_t21 Direction_t21  Prob_Down_t28  Prob_Up_t28 Direction_t28  \
-0  2019-01-01   0.557625      0.455473    0.544527    UNCERTAIN       0.194069     0.805931            UP       0.126449     0.873551            UP       0.053220     0.946780            UP   
-1  2019-01-02   0.569490      0.472617    0.527383    UNCERTAIN       0.209064     0.790936            UP       0.130963     0.869037            UP       0.052487     0.947513            UP   
-2  2019-01-03   0.569490      0.599575    0.400425         DOWN       0.286130     0.713870            UP       0.155613     0.844387            UP       0.071952     0.928048            UP   
-3  2019-01-04   0.557625      0.494203    0.505797    UNCERTAIN       0.249211     0.750789            UP       0.167951     0.832049            UP       0.070198     0.929802            UP   
-4  2019-01-05   0.581354      0.476671    0.523329    UNCERTAIN       0.252991     0.747009            UP       0.181936     0.818064            UP       0.069837     0.930163            UP   
-5  2019-01-06   0.605083      0.477099    0.522901    UNCERTAIN       0.257047     0.742953            UP       0.177808     0.822192            UP       0.074914     0.925086            UP   
-6  2019-01-07   0.610260      0.435296    0.564704           UP       0.240775     0.759225            UP       0.169552     0.830448            UP       0.063537     0.936463            UP   
-7  2019-01-08   0.622225      0.132554    0.867446           UP       0.083214     0.916786            UP       0.081718     0.918282            UP       0.071810     0.928190            UP   
-8  2019-01-09   0.658123      0.151089    0.848911           UP       0.102638     0.897362            UP       0.107331     0.892669            UP       0.078953     0.921047            UP   
-9  2019-01-10   0.682055      0.150501    0.849499           UP       0.104424     0.895576            UP       0.098134     0.901866            UP       0.083535     0.916465            UP   
-10 2019-01-11   0.694021      0.144705    0.855295           UP       0.100247     0.899753            UP       0.101341     0.898659            UP       0.095755     0.904245            UP   
-11 2019-01-12   0.705987      0.128371    0.871629           UP       0.109072     0.890928            UP       0.104435     0.895565            UP       0.103715     0.896285            UP   
-12 2019-01-13   0.717952      0.153143    0.846857           UP       0.119649     0.880351            UP       0.131665     0.868335            UP       0.117929     0.882071            UP   
-13 2019-01-14   0.750000      0.192777    0.807223           UP       0.165055     0.834945            UP       0.191547     0.808453            UP       0.139694     0.860306            UP   
-14 2019-01-15   0.750000      0.248462    0.751538           UP       0.197206     0.802794            UP       0.192848     0.807152            UP       0.166976     0.833024            UP   
-15 2019-01-16   0.762500      0.202765    0.797235           UP       0.174725     0.825275            UP       0.187608     0.812392            UP       0.160861     0.839139            UP   
-16 2019-01-17   0.750000      0.176874    0.823126           UP       0.176094     0.823906            UP       0.182764     0.817236            UP       0.172628     0.827372            UP   
-17 2019-01-18   0.775000      0.192888    0.807112           UP       0.160734     0.839266            UP       0.182419     0.817581            UP       0.168842     0.831158            UP   
-18 2019-01-19   0.750000      0.203986    0.796014           UP       0.175925     0.824075            UP       0.215781     0.784219            UP       0.186379     0.813621            UP   
-19 2019-01-20   0.737500      0.227369    0.772631           UP       0.207547     0.792453            UP       0.223013     0.776987            UP       0.212588     0.787412            UP   
-20 2019-01-21   0.725000      0.334877    0.665123           UP       0.300718     0.699282            UP       0.292624     0.707376            UP       0.255577     0.744423            UP   
-21 2019-01-22   0.712500      0.335215    0.664785           UP       0.301002     0.698998            UP       0.267273     0.732727            UP       0.257916     0.742084            UP   
-22 2019-01-23   0.700000      0.280047    0.719953           UP       0.255287     0.744713            UP       0.247574     0.752426            UP       0.231676     0.768324            UP   
-23 2019-01-24   0.700000      0.310583    0.689417           UP       0.280003     0.719997            UP       0.289905     0.710095            UP       0.255972     0.744028            UP   
-24 2019-01-25   0.700000      0.289491    0.710509           UP       0.264286     0.735714            UP       0.256880     0.743120            UP       0.242798     0.757202            UP   
-25 2019-01-26   0.675000      0.259057    0.740943           UP       0.226350     0.773650            UP       0.221368     0.778632            UP       0.229671     0.770329            UP   
-26 2019-01-27   0.675000      0.287854    0.712146           UP       0.252096     0.747904            UP       0.241761     0.758239            UP       0.251104     0.748896            UP   
-27 2019-01-28   0.675000      0.290442    0.709558           UP       0.274895     0.725105            UP       0.253195     0.746805            UP       0.246073     0.753927            UP   
-28 2019-01-29   0.687500      0.262201    0.737799           UP       0.254411     0.745589            UP       0.241144     0.758856            UP       0.235740     0.764260            UP   
-29 2019-01-30   0.662500      0.251042    0.748958           UP       0.216301     0.783699            UP       0.208027     0.791973            UP       0.199490     0.800510            UP   
-30 2019-01-31   0.675000      0.283990    0.716010           UP       0.248000     0.752000            UP       0.228877     0.771123            UP       0.229148     0.770852            UP   
-31 2019-02-01   0.662500      0.242068    0.757932           UP       0.200312     0.799688            UP       0.192677     0.807323            UP       0.214190     0.785810            UP   
-32 2019-02-02   0.700000      0.230262    0.769738           UP       0.208711     0.791289            UP       0.200999     0.799001            UP       0.205734     0.794266            UP   
-33 2019-02-03   0.712500      0.250580    0.749420           UP       0.217542     0.782458            UP       0.217255     0.782745            UP       0.234509     0.765491            UP   
-34 2019-02-04   0.750000      0.285463    0.714537           UP       0.239687     0.760313            UP       0.239588     0.760412            UP       0.267604     0.732396            UP   
-35 2019-02-05   0.750000      0.236237    0.763763           UP       0.212486     0.787514            UP       0.233043     0.766957            UP       0.248180     0.751820            UP   
-36 2019-02-06   0.737500      0.222040    0.777960           UP       0.200365     0.799635            UP       0.211729     0.788271            UP       0.229275     0.770725            UP   
-37 2019-02-07   0.762500      0.252613    0.747387           UP       0.253140     0.746860            UP       0.257563     0.742437            UP       0.264084     0.735916            UP   
-38 2019-02-08   0.762500      0.231657    0.768343           UP       0.218875     0.781125            UP       0.231218     0.768782            UP       0.256267     0.743733            UP   
-39 2019-02-09   0.750000      0.238757    0.761243           UP       0.224314     0.775686            UP       0.249285     0.750715            UP       0.258346     0.741654            UP   
-40 2019-02-10   0.775000      0.252474    0.747526           UP       0.241989     0.758011            UP       0.256189     0.743811            UP       0.280835     0.719165            UP   
-41 2019-02-11   0.762500      0.312006    0.687994           UP       0.306218     0.693782            UP       0.304096     0.695904            UP       0.333250     0.666750            UP   
-42 2019-02-12   0.762500      0.303900    0.696100           UP       0.300240     0.699760            UP       0.298964     0.701036            UP       0.309299     0.690701            UP   
-43 2019-02-13   0.800000      0.232799    0.767201           UP       0.232182     0.767818            UP       0.244114     0.755886            UP       0.259334     0.740666            UP   
-44 2019-02-14   0.812500      0.353520    0.646480           UP       0.333571     0.666429            UP       0.333941     0.666059            UP       0.356373     0.643627            UP   
-45 2019-02-15   0.825000      0.268990    0.731010           UP       0.248147     0.751853            UP       0.273045     0.726955            UP       0.303068     0.696932            UP   
-46 2019-02-16   0.825000      0.194928    0.805072           UP       0.214253     0.785747            UP       0.189596     0.810404            UP       0.293656     0.706344            UP   
-47 2019-02-17   0.825000      0.292600    0.707400           UP       0.271860     0.728140            UP       0.292294     0.707706            UP       0.336749     0.663251            UP   
-48 2019-02-18   0.825000      0.299207    0.700793           UP       0.279194     0.720806            UP       0.292537     0.707463            UP       0.350162     0.649838            UP   
-49 2019-02-19   0.825000      0.330461    0.669539           UP       0.326199     0.673801            UP       0.331263     0.668737            UP       0.371194     0.628806            UP   
-
-    Guardrail Confidence                                     Action  
-0           0       HIGH  Strong demand increase → act aggressively  
-1           0       HIGH  Strong demand increase → act aggressively  
-2           1        LOW                         Monitor (unstable)  
-3           0       HIGH  Strong demand increase → act aggressively  
-4           0       HIGH  Strong demand increase → act aggressively  
-5           0       HIGH  Strong demand increase → act aggressively  
-6           0       HIGH  Strong demand increase → act aggressively  
-7           0       HIGH  Strong demand increase → act aggressively  
-8           0       HIGH  Strong demand increase → act aggressively  
-9           0       HIGH  Strong demand increase → act aggressively  
-10          0       HIGH  Strong demand increase → act aggressively  
-11          0       HIGH  Strong demand increase → act aggressively  
-12          0       HIGH  Strong demand increase → act aggressively  
-13          0       HIGH  Strong demand increase → act aggressively  
-14          1        LOW                         Monitor (unstable)  
-15          0       HIGH  Strong demand increase → act aggressively  
-16          0       HIGH  Strong demand increase → act aggressively  
-17          0       HIGH  Strong demand increase → act aggressively  
-18          0       HIGH  Strong demand increase → act aggressively  
-19          0       HIGH  Strong demand increase → act aggressively  
-20          1        LOW                         Monitor (unstable)  
-21          1        LOW                         Monitor (unstable)  
-22          0       HIGH  Strong demand increase → act aggressively  
-23          0       HIGH  Strong demand increase → act aggressively  
-24          0       HIGH  Strong demand increase → act aggressively  
-25          0       HIGH  Strong demand increase → act aggressively  
-26          0       HIGH  Strong demand increase → act aggressively  
-27          1        LOW                         Monitor (unstable)  
-28          1        LOW                         Monitor (unstable)  
-29          0       HIGH  Strong demand increase → act aggressively  
-30          0       HIGH  Strong demand increase → act aggressively  
-31          0       HIGH  Strong demand increase → act aggressively  
-32          1        LOW                         Monitor (unstable)  
-33          0       HIGH  Strong demand increase → act aggressively  
-34          1        LOW                         Monitor (unstable)  
-35          0       HIGH  Strong demand increase → act aggressively  
-36          0       HIGH  Strong demand increase → act aggressively  
-37          0       HIGH  Strong demand increase → act aggressively  
-38          0       HIGH  Strong demand increase → act aggressively  
-39          0       HIGH  Strong demand increase → act aggressively  
-40          0       HIGH  Strong demand increase → act aggressively  
-41          0       HIGH  Strong demand increase → act aggressively  
-42          0       HIGH  Strong demand increase → act aggressively  
-43          0       HIGH  Strong demand increase → act aggressively  
-44          1        LOW                         Monitor (unstable)  
-45          0       HIGH  Strong demand increase → act aggressively  
-46          0       HIGH  Strong demand increase → act aggressively  
-47          0       HIGH  Strong demand increase → act aggressively  
-48          0       HIGH  Strong demand increase → act aggressively  
-49          0       HIGH  Strong demand increase → act aggressively  
-
-Shape: (336, 17)
-
-================================================================================
-4. RAW TEST DATA (key columns)
-================================================================================
-          Date  Occupancy  target_t1  target_t7  target_t14  target_t21  target_t28  Direction_t1  Direction_t7  Direction_t14  Direction_t21  Direction_t28  Booking_Intensity  Notice_Pressure
-883 2019-01-01   0.557625   0.569490   0.622225      0.7500      0.7125      0.6875             1             1              1              1              1           0.000000         0.000000
-884 2019-01-02   0.569490   0.569490   0.658123      0.7625      0.7000      0.6625             0             1              1              1              1           0.011864         0.000000
-885 2019-01-03   0.569490   0.557625   0.682055      0.7500      0.7000      0.6750            -1             1              1              1              1           0.035593         0.118644
-886 2019-01-04   0.557625   0.581354   0.694021      0.7750      0.7000      0.6625             1             1              1              1              1           0.000000         0.023729
-887 2019-01-05   0.581354   0.605083   0.705987      0.7500      0.6750      0.7000             1             1              1              1              1           0.000000         0.011864
-888 2019-01-06   0.605083   0.610260   0.717952      0.7375      0.6750      0.7125             1             1              1              1              1           0.000000         0.023729
-889 2019-01-07   0.610260   0.622225   0.750000      0.7250      0.6750      0.7500             1             1              1              1              1           0.023932         0.000000
-890 2019-01-08   0.622225   0.658123   0.750000      0.7125      0.6875      0.7500             1             1              1              1              1           0.000000         0.023932
-891 2019-01-09   0.658123   0.682055   0.762500      0.7000      0.6625      0.7375             1             1              1              0              1           0.023932         0.011966
-892 2019-01-10   0.682055   0.694021   0.750000      0.7000      0.6750      0.7625             1             1              1             -1              1           0.011966         0.011966
-893 2019-01-11   0.694021   0.705987   0.775000      0.7000      0.6625      0.7625             1             1              1             -1              1           0.000000         0.035898
-894 2019-01-12   0.705987   0.717952   0.750000      0.6750      0.7000      0.7500             1             1             -1             -1              1           0.011966         0.011966
-895 2019-01-13   0.717952   0.750000   0.737500      0.6750      0.7125      0.7750             1             1             -1             -1              1           0.000000         0.000000
-896 2019-01-14   0.750000   0.750000   0.725000      0.6750      0.7500      0.7625             0            -1             -1              0              1           0.037500         0.025000
-897 2019-01-15   0.750000   0.762500   0.712500      0.6875      0.7500      0.7625             1            -1             -1              0              1           0.025000         0.075000
-898 2019-01-16   0.762500   0.750000   0.700000      0.6625      0.7375      0.8000            -1            -1             -1             -1              1           0.012500         0.000000
-899 2019-01-17   0.750000   0.775000   0.700000      0.6750      0.7625      0.8125             1            -1             -1              1              1           0.025000         0.012500
-900 2019-01-18   0.775000   0.750000   0.700000      0.6625      0.7625      0.8250            -1            -1             -1             -1              1           0.000000         0.000000
-901 2019-01-19   0.750000   0.737500   0.675000      0.7000      0.7500      0.8250            -1            -1             -1              0              1           0.000000         0.000000
-902 2019-01-20   0.737500   0.725000   0.675000      0.7125      0.7750      0.8250            -1            -1             -1              1              1           0.000000         0.000000
-903 2019-01-21   0.725000   0.712500   0.675000      0.7500      0.7625      0.8250            -1            -1              1              1              1           0.025000         0.050000
-904 2019-01-22   0.712500   0.700000   0.687500      0.7500      0.7625      0.8250            -1            -1              1              1              1           0.012500         0.050000
-905 2019-01-23   0.700000   0.700000   0.662500      0.7375      0.8000      0.8125             0            -1              1              1              1           0.012500         0.000000
-906 2019-01-24   0.700000   0.700000   0.675000      0.7625      0.8125      0.8125             0            -1              1              1              1           0.025000         0.037500
-907 2019-01-25   0.700000   0.675000   0.662500      0.7625      0.8250      0.8250            -1            -1              1              1              1           0.025000         0.000000
-908 2019-01-26   0.675000   0.675000   0.700000      0.7500      0.8250      0.8125             0             1              1              1              1           0.000000         0.000000
-909 2019-01-27   0.675000   0.675000   0.712500      0.7750      0.8250      0.8625             0             1              1              1              1           0.000000         0.025000
-910 2019-01-28   0.675000   0.687500   0.750000      0.7625      0.8250      0.8375             1             1              1              1              1           0.050000         0.025000
-911 2019-01-29   0.687500   0.662500   0.750000      0.7625      0.8250      0.8375            -1             1              1              1              1           0.062500         0.025000
-912 2019-01-30   0.662500   0.675000   0.737500      0.8000      0.8125      0.8500             1             1              1              1              1           0.037500         0.000000
-913 2019-01-31   0.675000   0.662500   0.762500      0.8125      0.8125      0.8250            -1             1              1              1              1           0.012500         0.012500
-914 2019-02-01   0.662500   0.700000   0.762500      0.8250      0.8250      0.8125             1             1              1              1              1           0.000000         0.000000
-915 2019-02-02   0.700000   0.712500   0.750000      0.8250      0.8125      0.8000             1             1              1              1              1           0.050000         0.025000
-916 2019-02-03   0.712500   0.750000   0.775000      0.8250      0.8625      0.8000             1             1              1              1              1           0.000000         0.012500
-917 2019-02-04   0.750000   0.750000   0.762500      0.8250      0.8375      0.8250             0             1              1              1              1           0.000000         0.050000
-918 2019-02-05   0.750000   0.737500   0.762500      0.8250      0.8375      0.8250            -1             1              1              1              1           0.000000         0.000000
-919 2019-02-06   0.737500   0.762500   0.800000      0.8125      0.8500      0.8250             1             1              1              1              1           0.000000         0.000000
-920 2019-02-07   0.762500   0.762500   0.812500      0.8125      0.8250      0.8250             0             1              1              1              1           0.025000         0.012500
-921 2019-02-08   0.762500   0.750000   0.825000      0.8250      0.8125      0.8625            -1             1              1              1              1           0.000000         0.000000
-922 2019-02-09   0.750000   0.775000   0.825000      0.8125      0.8000      0.8625             1             1              1              1              1           0.000000         0.000000
-923 2019-02-10   0.775000   0.762500   0.825000      0.8625      0.8000      0.8375            -1             1              1              1              1           0.000000         0.000000
-924 2019-02-11   0.762500   0.762500   0.825000      0.8375      0.8250      0.8375             0             1              1              1              1           0.000000         0.025000
-925 2019-02-12   0.762500   0.800000   0.825000      0.8375      0.8250      0.8375             1             1              1              1              1           0.012500         0.000000
-926 2019-02-13   0.800000   0.812500   0.812500      0.8500      0.8250      0.8375             1             1              1              1              1           0.037500         0.000000
-927 2019-02-14   0.812500   0.825000   0.812500      0.8250      0.8250      0.8375             1             0              1              1              1           0.012500         0.050000
-928 2019-02-15   0.825000   0.825000   0.825000      0.8125      0.8625      0.8500             0             0             -1              1              1           0.000000         0.000000
-929 2019-02-16   0.825000   0.825000   0.812500      0.8000      0.8625      0.8625             0            -1             -1              1              1           0.025000         0.037500
-930 2019-02-17   0.825000   0.825000   0.862500      0.8000      0.8375      0.8625             0             1             -1              1              1           0.000000         0.000000
-931 2019-02-18   0.825000   0.825000   0.837500      0.8250      0.8375      0.8625             0             1              0              1              1           0.000000         0.000000
-932 2019-02-19   0.825000   0.812500   0.837500      0.8250      0.8375      0.8750            -1             1              0              1              1           0.012500         0.000000
-
-Shape: (336, 14)
-
-================================================================================
-5. POINT PREDICTIONS VS ACTUALS
-================================================================================
-         Date  Occupancy  Actual_t1   Pred_t1  Actual_t7   Pred_t7  Actual_t14  Pred_t14  Actual_t21  Pred_t21  Actual_t28  Pred_t28
-0  2019-01-01   0.557625   0.569490  0.554446   0.622225  0.582151      0.7500  0.672171      0.7125  0.757092      0.6875  0.799845
-1  2019-01-02   0.569490   0.569490  0.566464   0.658123  0.593610      0.7625  0.678047      0.7000  0.759999      0.6625  0.797874
-2  2019-01-03   0.569490   0.557625  0.565522   0.682055  0.552710      0.7500  0.622583      0.7000  0.694791      0.6750  0.742977
-3  2019-01-04   0.557625   0.581354  0.552976   0.694021  0.566460      0.7750  0.639264      0.7000  0.707912      0.6625  0.755500
-4  2019-01-05   0.581354   0.605083  0.578161   0.705987  0.579341      0.7500  0.635755      0.6750  0.702259      0.7000  0.765704
-5  2019-01-06   0.605083   0.610260  0.601191   0.717952  0.599466      0.7375  0.650371      0.6750  0.708407      0.7125  0.767334
-6  2019-01-07   0.610260   0.622225  0.603470   0.750000  0.598783      0.7250  0.637571      0.6750  0.699889      0.7500  0.761155
-7  2019-01-08   0.622225   0.658123  0.641506   0.750000  0.783945      0.7125  0.884058      0.6875  0.890741      0.7500  0.845496
-8  2019-01-09   0.658123   0.682055  0.677748   0.762500  0.809165      0.7000  0.892160      0.6625  0.895720      0.7375  0.854640
-9  2019-01-10   0.682055   0.694021  0.701173   0.750000  0.831135      0.7000  0.908812      0.6750  0.906101      0.7625  0.862871
-10 2019-01-11   0.694021   0.705987  0.712467   0.775000  0.834032      0.7000  0.910101      0.6625  0.899384      0.7625  0.856439
-11 2019-01-12   0.705987   0.717952  0.723242   0.750000  0.846497      0.6750  0.908456      0.7000  0.899202      0.7500  0.857997
-12 2019-01-13   0.717952   0.750000  0.733657   0.737500  0.824833      0.6750  0.876860      0.7125  0.874884      0.7750  0.853203
-13 2019-01-14   0.750000   0.750000  0.764741   0.725000  0.844151      0.6750  0.876461      0.7500  0.864382      0.7625  0.849279
-14 2019-01-15   0.750000   0.762500  0.761829   0.712500  0.819883      0.6875  0.846201      0.7500  0.835902      0.7625  0.824654
-15 2019-01-16   0.762500   0.750000  0.773267   0.700000  0.838760      0.6625  0.866086      0.7375  0.863990      0.8000  0.854570
-16 2019-01-17   0.750000   0.775000  0.760157   0.700000  0.838572      0.6750  0.864483      0.7625  0.861939      0.8125  0.854087
-17 2019-01-18   0.775000   0.750000  0.788045   0.700000  0.850119      0.6625  0.880051      0.7625  0.882450      0.8250  0.881326
-18 2019-01-19   0.750000   0.737500  0.760428   0.675000  0.816934      0.7000  0.847339      0.7500  0.855103      0.8250  0.857968
-19 2019-01-20   0.737500   0.725000  0.746643   0.675000  0.791335      0.7125  0.813123      0.7750  0.821437      0.8250  0.827938
-20 2019-01-21   0.725000   0.712500  0.733627   0.675000  0.756772      0.7500  0.767991      0.7625  0.780227      0.8250  0.796917
-21 2019-01-22   0.712500   0.700000  0.720218   0.687500  0.746112      0.7500  0.760141      0.7625  0.773462      0.8250  0.787211
-22 2019-01-23   0.700000   0.700000  0.707511   0.662500  0.743741      0.7375  0.767556      0.8000  0.791651      0.8125  0.802048
-23 2019-01-24   0.700000   0.700000  0.709405   0.675000  0.749965      0.7625  0.777970      0.8125  0.792656      0.8125  0.794046
-24 2019-01-25   0.700000   0.675000  0.709592   0.662500  0.744252      0.7625  0.769569      0.8250  0.794919      0.8250  0.802334
-25 2019-01-26   0.675000   0.675000  0.684516   0.700000  0.731212      0.7500  0.769960      0.8250  0.793526      0.8125  0.794391
-26 2019-01-27   0.675000   0.675000  0.685941   0.712500  0.738613      0.7750  0.779824      0.8250  0.792831      0.8625  0.785179
-27 2019-01-28   0.675000   0.687500  0.685285   0.750000  0.737963      0.7625  0.769910      0.8250  0.781126      0.8375  0.769660
-28 2019-01-29   0.687500   0.662500  0.697345   0.750000  0.757753      0.7625  0.789359      0.8250  0.796646      0.8375  0.781145
-29 2019-01-30   0.662500   0.675000  0.671567   0.737500  0.737047      0.8000  0.784570      0.8125  0.803040      0.8500  0.783814
-30 2019-01-31   0.675000   0.662500  0.686517   0.762500  0.754559      0.8125  0.802157      0.8125  0.809010      0.8250  0.783821
-31 2019-02-01   0.662500   0.700000  0.674378   0.762500  0.741479      0.8250  0.797787      0.8250  0.812778      0.8125  0.788191
-32 2019-02-02   0.700000   0.712500  0.714587   0.750000  0.791964      0.8250  0.837376      0.8125  0.837794      0.8000  0.806514
-33 2019-02-03   0.712500   0.750000  0.725125   0.775000  0.798713      0.8250  0.846014      0.8625  0.839155      0.8000  0.807705
-34 2019-02-04   0.750000   0.750000  0.761289   0.762500  0.818029      0.8250  0.854812      0.8375  0.841422      0.8250  0.812098
-35 2019-02-05   0.750000   0.737500  0.757938   0.762500  0.814923      0.8250  0.847670      0.8375  0.843345      0.8250  0.822927
-36 2019-02-06   0.737500   0.762500  0.745178   0.800000  0.806249      0.8125  0.839913      0.8500  0.834280      0.8250  0.813178
-37 2019-02-07   0.762500   0.762500  0.772714   0.812500  0.831311      0.8125  0.852408      0.8250  0.836916      0.8250  0.813098
-38 2019-02-08   0.762500   0.750000  0.772397   0.825000  0.822742      0.8250  0.846695      0.8125  0.834020      0.8625  0.813020
-39 2019-02-09   0.750000   0.775000  0.758337   0.825000  0.801267      0.8125  0.824134      0.8000  0.824035      0.8625  0.818542
-40 2019-02-10   0.775000   0.762500  0.784579   0.825000  0.819601      0.8625  0.834633      0.8000  0.830498      0.8375  0.825900
-41 2019-02-11   0.762500   0.762500  0.768436   0.825000  0.796377      0.8375  0.805575      0.8250  0.802756      0.8375  0.807372
-42 2019-02-12   0.762500   0.800000  0.767360   0.825000  0.789811      0.8375  0.796324      0.8250  0.802412      0.8375  0.807518
-43 2019-02-13   0.800000   0.812500  0.808457   0.812500  0.850141      0.8500  0.860436      0.8250  0.862318      0.8375  0.861020
-44 2019-02-14   0.812500   0.825000  0.818889   0.812500  0.838674      0.8250  0.841887      0.8250  0.835524      0.8375  0.835680
-45 2019-02-15   0.825000   0.825000  0.832102   0.825000  0.865453      0.8125  0.877572      0.8625  0.876028      0.8500  0.877001
-46 2019-02-16   0.825000   0.825000  0.832684   0.812500  0.899890      0.8000  0.916486      0.8625  0.906478      0.8625  0.884022
-47 2019-02-17   0.825000   0.825000  0.831452   0.862500  0.863094      0.8000  0.876636      0.8375  0.873972      0.8625  0.868625
-48 2019-02-18   0.825000   0.825000  0.830872   0.837500  0.866547      0.8250  0.882545      0.8375  0.874661      0.8625  0.859373
-49 2019-02-19   0.825000   0.812500  0.829197   0.837500  0.854153      0.8250  0.859044      0.8375  0.851196      0.8750  0.838884
-
-Shape: (336, 12)
-
-================================================================================
-6. EXPORT CORE FILES FOR NOTEBOOK 03
-================================================================================
+<pre>Saved:
+- operational_output_nb2.csv
+- direction_summary.csv
 Saved:
-- diag_direction_t1.csv
-- diag_direction_t7.csv
-- diag_final_output_multi.csv
-- diag_pred_check.csv
-- diag_test_keycols.csv
+- operational_output_nb2.csv
+- direction_summary.csv
+- pred_check_nb2.csv
 </pre>
 </div>
 </div>
