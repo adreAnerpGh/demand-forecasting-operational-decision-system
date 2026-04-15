@@ -20,10 +20,10 @@ A simplified operational dashboard (no setup required):
 
 You can explore the full project directly through the HTML notebooks:
 
-1. [View Data Preparation (documentation only)](https://adreanerpgh.github.io/demand-forecasting-operational-decision-system/notebooks/01_build_daily_dataset.html)
-2. [View Modeling & Forecasting](https://adreanerpgh.github.io/demand-forecasting-operational-decision-system/notebooks/02_forecasting_and_spike_analysis_test=2019.html)
-3. [Operational Calibration](https://adreanerpgh.github.io/demand-forecasting-operational-decision-system/notebooks/03_operational_calibration.html)  
-4. [Operational Demo (final output)](https://adreanerpgh.github.io/demand-forecasting-operational-decision-system/notebooks/04_operational_demo.html)  
+01. [View Data Preparation (documentation only)](https://adreanerpgh.github.io/demand-forecasting-operational-decision-system/notebooks/01_build_daily_dataset.html)
+02. [View Modeling & Forecasting](https://adreanerpgh.github.io/demand-forecasting-operational-decision-system/notebooks/02_forecasting_and_spike_analysis_test=2019.html)
+03. [Operational Calibration](https://adreanerpgh.github.io/demand-forecasting-operational-decision-system/notebooks/03_operational_calibration.html)  
+04. [Operational Demo (final output)](https://adreanerpgh.github.io/demand-forecasting-operational-decision-system/notebooks/04_operational_demo.html)  
 
 Note: Notebook 01 requires raw data and is included for documentation only.  
 Notebooks 02–04 are fully reproducible using the provided dataset.
