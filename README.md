@@ -1,6 +1,6 @@
 # Demand Forecasting & Operational Decision System
 
-This project develops a data-driven system to support pricing and demand management decisions in an accommodation business.
+This project develops a data-driven system to support pricing and demand management decisions in an accommodation business, transforming operational data into actionable signals.
 
 It combines demand dynamics modeling, forecasting, and reliability calibration to transform operational data into actionable business signals.
 
@@ -8,9 +8,34 @@ The project originates from real operational work, where data was collected and 
 
 ---------------------------------------------------------------------
 
+## Live Demo
+
+A simplified operational dashboard (no setup required):
+
+[View the operational demo](https://adreanerpgh.github.io/demand-forecasting-operational-decision-system/notebooks/04_operational_demo.html)
+
+---------------------------------------------------------------------
+
+## Project Walkthrough (No Setup Required)
+
+You can explore the full project directly through the HTML notebooks:
+
+- Data Preparation (documentation only): https://adreanerpgh.github.io/demand-forecasting-operational-decision-system/notebooks/01_data_preparation.html  
+
+- Modeling & Forecasting: https://adreanerpgh.github.io/demand-forecasting-operational-decision-system/notebooks/02_modeling.html  
+
+- Operational Calibration: https://adreanerpgh.github.io/demand-forecasting-operational-decision-system/notebooks/03_operational_calibration.html  
+
+- Operational Demo (final output): https://adreanerpgh.github.io/demand-forecasting-operational-decision-system/notebooks/04_operational_demo.html  
+
+Note: Notebook 01 requires raw data and is included for documentation only.  
+Notebooks 02–04 are fully reproducible using the provided dataset.
+
+---------------------------------------------------------------------
+
 ## Business Objective
 
-The goal is not only to predict occupancy, but to answer:
+The goal is not only to predict occupancy levels, but to provide reliable signals for operational decision-making:
 
 - When should pricing be increased or reduced?
 - How reliable are the model signals at any given time?
@@ -89,6 +114,7 @@ This perspective leads to several key insights:
 - High-demand or high-cancellation periods introduce instability and reduce predictability  
 
 These findings directly inform both the forecasting models and the operational decision layer.
+These observations explain why predicting exact occupancy levels is less reliable in unstable periods, and motivate the use of directional and reliability-aware decision signals instead.
 
 ---------------------------------------------------------------------
 
@@ -112,8 +138,8 @@ This transformation step is a key part of the project, enabling reliable modelin
 ## Project Structure
 ```
 ├── notebooks/
-│   ├── 01_data_preparation.ipynb
-│   ├── 01_data_preparation.html
+│   ├── 01_data_preparation.ipynb 
+│   ├── 01_data_preparation.html 
 │   ├── 02_modeling.ipynb
 │   ├── 02_modeling.html
 │   ├── 03_operational_calibration.ipynb
