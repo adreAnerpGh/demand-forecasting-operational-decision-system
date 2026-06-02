@@ -1,0 +1,105 @@
+table MeasuresDaily
+	lineageTag: 0a1da90d-40ff-416c-abab-c65fa48d6f7d
+
+	measure 'Occupancy (Latest)' =
+			
+			CALCULATE(
+			    AVERAGE(DailyData[Occupancy]),
+			    FILTER(
+			        DailyData,
+			        DailyData[Date] = [Latest Date Filter]
+			    )
+			)
+		formatString: 0
+		lineageTag: 6c3182aa-4e9e-470b-bf3b-2c6e3ca9869e
+
+	measure 'Bookings Last 7 Days' =
+			
+			CALCULATE(
+			    SUM(DailyData[Bookings]),
+			    DATESINPERIOD(DateTable[Date], MAX(DateTable[Date]), -7, DAY)
+			)
+		formatString: 0
+		lineageTag: 6a9178a6-0da6-41c9-b3fc-3ede836147b5
+
+	measure 'Notices Last 7 Days' =
+			
+			CALCULATE(
+			    SUM(DailyData[Notices]),
+			    DATESINPERIOD(DateTable[Date], MAX(DateTable[Date]), -7, DAY)
+			)
+		formatString: 0
+		lineageTag: cb0fa113-59c5-4fe2-ad79-8d4442983daa
+
+	measure 'Net Flow Last 7 Days' =
+			
+			[Bookings Last 7 Days] - [Notices Last 7 Days]
+		formatString: 0
+		lineageTag: 495a6b69-26a0-42dc-9ac6-489e28d42ed3
+
+	measure 'Net Flow Previous 7 Days' =
+			
+			CALCULATE(
+			    [Net Flow Last 7 Days],
+			    DATEADD(DateTable[Date], -7, DAY)
+			)
+		formatString: 0
+		lineageTag: 359d71bb-c087-4aca-bf5c-bbaf1f1b7b23
+
+	measure 'Net Flow Change' =
+			
+			[Net Flow Last 7 Days] - [Net Flow Previous 7 Days]
+		formatString: 0
+		lineageTag: 084db631-ddfb-4d65-8470-afea7973868b
+
+	measure 'System Status' =
+			
+			SWITCH(
+			    TRUE(),
+			    [Net Flow Last 7 Days] > 0, "Tightening",
+			    [Net Flow Last 7 Days] < 0, "Loosening",
+			    "Stable"
+			)
+		lineageTag: 2c0ad381-3676-487e-8037-1a31f9bea3fd
+
+	measure 'Occupancy vs Monthly Avg' =
+			
+			[Occupancy %] - CALCULATE([Occupancy %], ALL(DateTable[Day Name]))
+		lineageTag: 98c52cf2-9aef-4059-981d-f2b0a2530e7a
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Units Available (Latest)' =
+			
+			CALCULATE(
+			    SUM(DailyData[units_available]),
+			    FILTER(
+			        DailyData,
+			        DailyData[Date] = [Latest Date Filter]
+			    )
+			)
+		lineageTag: 6cebe577-6892-431e-889a-afff310a17e8
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Latest Date Filter' = MAX(PredictionData[Date])
+		formatString: General Date
+		lineageTag: 21bb1398-964f-4899-9a7a-9b845d945e90
+
+	column Column
+		formatString: 0
+		lineageTag: f1a6407b-8152-474b-9d8b-4421510b9eee
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Column]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition MeasuresDaily = calculated
+		mode: import
+		source = Row("Column", BLANK())
+
+	annotation PBI_Id = 44d95927abd841bf83b6888bb9316e7d
+
+	annotation 436ba87b-9c83-4389-a31b-ebd06a36be98 = {"Expression":""}
+

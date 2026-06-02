@@ -1,0 +1,29 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-GB
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation PBI_QueryOrder = ["DailyData","PredictionData"]
+
+annotation __PBI_TimeIntelligenceEnabled = 1
+
+annotation PBIDesktopVersion = 2.143.1204.0 (25.05)+23c84aace645781dd62b8a26eb0418c7e6a84b72
+
+annotation PBI_ProTooling = ["DevMode"]
+
+ref table DailyData
+ref table DateTableTemplate_aa827a04-c622-49dd-a5f2-0fcd554c380d
+ref table DateTable
+ref table LocalDateTable_f7a547d0-4c1a-4c76-8269-132274be2bea
+ref table Measure
+ref table MeasuresDaily
+ref table PredictionData
+ref table MeasuresPrediction
+ref table LocalDateTable_585cd57a-0930-44c7-99ab-42a60e0e9c61
+ref table LocalDateTable_b13e6a6a-33f1-47a2-95c2-3726e1acbdcd
+
+ref cultureInfo en-US
+
