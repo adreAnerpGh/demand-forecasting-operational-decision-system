@@ -16,6 +16,16 @@ A simplified operational dashboard (no setup required):
 
 ---------------------------------------------------------------------
 
+## Power BI Dashboard
+
+The project also includes an interactive Power BI dashboard that translates forecasting outputs into operational decision support.
+
+![Operations Overview](dashboard/operations_overview.png)
+
+![Operational Decision Dashboard](dashboard/operational_decision_dashboard.png)
+
+---------------------------------------------------------------------
+
 ## Project Walkthrough (No Setup Required)
 
 You can explore the full project directly through the HTML notebooks:
@@ -177,4 +187,17 @@ Additionally, a visual decision board is generated:
 - Medium-term forecasts (T+7 to T+28) outperform naive baselines  
 - Directional models become more useful as the forecast horizon increases  
 - The alignment score successfully identifies periods of higher and lower model reliability  
-- Combining demand signals, directional predictions, and reliability layers improves decision quality  
+- Combining demand signals, directional predictions, and reliability layers improves decision quality
+
+---------------------------------------------------------------------
+
+## Tools & Technologies
+
+- Python
+- Pandas
+- Scikit-Learn
+- Power BI
+- DAX
+- Time-Series Forecasting
+- Machine Learning
+- Data Visualisation
