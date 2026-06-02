@@ -18,7 +18,7 @@ A simplified operational dashboard (no setup required):
 
 ## Power BI Dashboard
 
-The project also includes an interactive Power BI dashboard that translates forecasting outputs into operational decision support.
+The project also includes an interactive Power BI dashboard that translates forecasting outputs into operational decision support. [Download Power BI file] (https://adreanerpgh.github.io/demand-forecasting-operational-decision-system/dashboard/demand_forecasting_dashboard.pbix)
 
 [Power BI Operations Overview](https://adreanerpgh.github.io/demand-forecasting-operational-decision-system/dashboard/operations_overview.png)
 
