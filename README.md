@@ -12,7 +12,7 @@ The project originates from real operational work, where data was collected and 
 
 A simplified operational dashboard (no setup required):
 
-[View the operational demo](https://adreanerpgh.github.io/demand-forecasting-operational-decision-system/notebooks/04_operational_demo.html)
+[View the operational demo](https://adreanerpgh.github.io/demand-forecasting-operational-decision-system/dashboard/demo.png)
 
 ---------------------------------------------------------------------
 
